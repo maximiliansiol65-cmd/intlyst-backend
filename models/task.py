@@ -1,0 +1,37 @@
+from datetime import date, datetime
+
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String, Text
+
+from models.base import Base
+
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id                = Column(Integer, primary_key=True, index=True)
+    workspace_id      = Column(Integer, nullable=False, default=1, index=True)
+    title             = Column(String, nullable=False)
+    description       = Column(Text, nullable=True)
+    status            = Column(String, nullable=False, default="open")
+    priority          = Column(String, nullable=False, default="medium")
+    assigned_to       = Column(String, nullable=True)
+    assigned_to_id    = Column(Integer, nullable=True)
+    due_date          = Column(Date, nullable=True)
+    recommendation_id = Column(Integer, nullable=True)
+    completed_at      = Column(DateTime, nullable=True)
+    created_by        = Column(String, nullable=True)
+    created_at        = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at        = Column(DateTime, nullable=True, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class TaskHistory(Base):
+    __tablename__ = "task_history"
+
+    id         = Column(Integer, primary_key=True)
+    workspace_id = Column(Integer, nullable=False, default=1, index=True)
+    task_id    = Column(Integer, nullable=False)
+    changed_by = Column(String, nullable=True)
+    field      = Column(String, nullable=False)
+    old_value  = Column(String, nullable=True)
+    new_value  = Column(String, nullable=True)
+    changed_at = Column(DateTime, default=datetime.utcnow)

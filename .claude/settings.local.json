@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"c:\\\\Users\\\\T590\\\\Desktop\\\\intlyst-backend-main\\\\login-preview.html\")"
+    ]
+  }
+}
