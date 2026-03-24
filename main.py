@@ -10,8 +10,6 @@ from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 from database import SessionLocal, init_db, reset_current_workspace_id, set_current_workspace_id
 from security_config import get_runtime_secret_issues, is_configured_secret, is_production_environment
@@ -69,6 +67,7 @@ from routers import (
     events, briefing, instagram, proactive, shopify, stripe, scheduler,
 )
 from api.email_preferences_routes import router as email_prefs_router
+from api.user_integrations_routes import router as user_integrations_router
 
 # ── APScheduler ───────────────────────────────────────────────────────────────
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -291,6 +290,7 @@ app.include_router(shopify.router)
 app.include_router(stripe.router)
 app.include_router(scheduler.router)
 app.include_router(email_prefs_router)
+app.include_router(user_integrations_router)
 
 # Optionaler Security-Router (wird eingebunden wenn security-Modul vorhanden)
 try:
@@ -339,7 +339,7 @@ def health():
     return result
 
 
-# Serve React Frontend (must be LAST)
+# ── Serve React Frontend (must be LAST) ──────────────────────────────────────
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse as _FileResponse
 

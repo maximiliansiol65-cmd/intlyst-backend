@@ -437,7 +437,7 @@ function PrognoseTab() {
     setError(null);
     setData(null);
 
-    fetch(`/api/ai/forecast?metric=${metric}&horizon=30`, {
+    fetch(`/api/ai/forecast/${metric}?horizon=30`, {
       headers: authHeader(),
       signal: ctrl.signal,
     })
@@ -819,7 +819,7 @@ function MarktTab() {
     setError(null);
     setData(null);
 
-    fetch(`/api/market?industry=${industry}`, {
+    fetch(`/api/market/overview?industry=${industry}`, {
       headers: authHeader(),
       signal: ctrl.signal,
     })
@@ -1268,7 +1268,7 @@ function BenchmarkTab() {
     setError(null);
     setData(null);
 
-    fetch("/api/benchmark", {
+    fetch("/api/benchmark/analyze", {
       headers: authHeader(),
       signal: ctrl.signal,
     })
