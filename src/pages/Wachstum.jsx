@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { SkeletonCard, SkeletonLine, Badge, Card } from "../components/ui";
+import StrategyBanner from "../components/StrategyBanner";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -1440,6 +1441,7 @@ export default function Wachstum() {
 
   return (
     <div className="page-enter" style={{ minHeight: "100vh", background: "var(--c-bg)" }}>
+      <StrategyBanner />
 
       {/* ── Hero Banner (gradient) ─────────────────────────────────────────── */}
       {/*

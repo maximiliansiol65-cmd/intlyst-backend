@@ -56,7 +56,14 @@ export function AuthProvider({ children }) {
     }
   }
 
-  function logout() {
+  async function logout() {
+    if (token) {
+      // Server-seitig informieren (best-effort, kein Await-Fehler)
+      fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
     setToken("");
     setUser(null);
     localStorage.removeItem("biz_token");

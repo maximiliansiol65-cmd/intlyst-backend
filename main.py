@@ -8,6 +8,8 @@ from datetime import datetime
 from typing import Optional
 
 from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -39,11 +41,9 @@ except Exception:
     pass
 
 # Rate Limiting
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-
-limiter = Limiter(key_func=get_remote_address)
+from rate_limit import limiter
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -53,8 +53,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("main")
 audit_logger = logging.getLogger("audit")
-
-load_dotenv()
 
 from routers import (
     timeseries, actions, goals, anomalies,
