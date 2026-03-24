@@ -337,18 +337,3 @@ def health():
             ) else "not_configured",
         }
     return result
-
-
-# ── Serve React Frontend (must be LAST) ──────────────────────────────────────
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse as _FileResponse
-
-if os.path.exists("static/assets"):
-    app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
-
-@app.get("/{full_path:path}", include_in_schema=False)
-async def serve_spa(full_path: str):
-    fp = f"static/{full_path}"
-    if os.path.exists(fp) and os.path.isfile(fp):
-        return _FileResponse(fp)
-    return _FileResponse("static/index.html")
