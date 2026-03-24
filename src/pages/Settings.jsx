@@ -8,7 +8,6 @@ import { useLanguage } from "../contexts/LanguageContext";
 const TABS = [
   { key: "konto",              label: "Konto"              },
   { key: "team",               label: "Team"               },
-  { key: "datenquellen",       label: "Datenquellen"       },
   { key: "benachrichtigungen", label: "Benachrichtigungen" },
   { key: "sprache",            label: "Sprache"            },
   { key: "abonnement",         label: "Abonnement"         },
@@ -531,10 +530,14 @@ function SpracheTab() {
   const { language, setLanguage, t } = useLanguage();
 
   const languages = [
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    { code: 'en', name: 'English', flag: '🇬🇧' },
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'de', name: 'Deutsch',    flag: '🇩🇪' },
+    { code: 'en', name: 'English',    flag: '🇬🇧' },
+    { code: 'es', name: 'Español',    flag: '🇪🇸' },
+    { code: 'fr', name: 'Français',   flag: '🇫🇷' },
+    { code: 'it', name: 'Italiano',   flag: '🇮🇹' },
+    { code: 'pt', name: 'Português',  flag: '🇵🇹' },
+    { code: 'zh', name: '中文',        flag: '🇨🇳' },
+    { code: 'ru', name: 'Русский',    flag: '🇷🇺' },
   ];
 
   return (
@@ -554,9 +557,9 @@ function SpracheTab() {
               onClick={() => setLanguage(lang.code)}
               style={{
                 padding: "var(--s-3) var(--s-4)",
-                border: language === lang.code ? "2px solid var(--c-primary)" : "1px solid var(--c-border)",
+                border: language === lang.code ? "2px solid #000" : "1px solid var(--c-border)",
                 borderRadius: "var(--r-md)",
-                background: language === lang.code ? "rgba(var(--c-primary-rgb), 0.05)" : "var(--c-surface)",
+                background: language === lang.code ? "#f5f5f5" : "var(--c-surface)",
                 cursor: "pointer",
                 transition: "all 0.2s",
                 display: "flex",
@@ -570,7 +573,7 @@ function SpracheTab() {
                 {lang.name}
               </span>
               {language === lang.code && (
-                <span style={{ fontSize: "12px", color: "var(--c-primary)", fontWeight: 600 }}>✓ Aktiv</span>
+                <span style={{ fontSize: "12px", color: "#000", fontWeight: 700 }}>✓ Aktiv</span>
               )}
             </button>
           ))}
@@ -707,7 +710,6 @@ export default function Settings() {
   const TABS_DYNAMIC = [
     { key: "konto",              label: t('account')              },
     { key: "team",               label: t('team')                 },
-    { key: "datenquellen",       label: t('dataSources')          },
     { key: "benachrichtigungen", label: t('notifications')        },
     { key: "sprache",            label: t('language')             },
     { key: "abonnement",         label: t('subscription')         },
@@ -744,7 +746,6 @@ export default function Settings() {
       <div key={activeTab} className="page-enter">
         {activeTab === "konto"              && <KontoTab user={user} authHeader={authHeader} logout={logout} />}
         {activeTab === "team"               && <TeamTab authHeader={authHeader} />}
-        {activeTab === "datenquellen"       && <DatenquellenTab authHeader={authHeader} />}
         {activeTab === "benachrichtigungen" && <BenachrichtigungenTab authHeader={authHeader} />}
         {activeTab === "sprache"            && <SpracheTab />}
         {activeTab === "abonnement"         && <AbonnementTab authHeader={authHeader} />}

@@ -9,9 +9,10 @@ from models.custom_kpi import CustomKPI
 from models.email_preferences import EmailPreferences, VerificationCode
 from models.business_event import BusinessEvent
 from models.social_account import SocialAccount
+from models.user_integration import UserIntegration
 
 __all__ = [
     "Base", "DailyMetrics", "ActionLog", "Goal", "Notification", "Task",
     "Funnel", "FunnelStep", "CustomKPI", "EmailPreferences", "VerificationCode",
-    "BusinessEvent", "SocialAccount",
+    "BusinessEvent", "SocialAccount", "UserIntegration",
 ]

@@ -67,6 +67,7 @@ from routers import (
     events, briefing, instagram, proactive, shopify, stripe, scheduler,
 )
 from api.email_preferences_routes import router as email_prefs_router
+from api.user_integrations_routes import router as user_integrations_router
 
 # ── APScheduler ───────────────────────────────────────────────────────────────
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -289,6 +290,7 @@ app.include_router(shopify.router)
 app.include_router(stripe.router)
 app.include_router(scheduler.router)
 app.include_router(email_prefs_router)
+app.include_router(user_integrations_router)
 
 # Optionaler Security-Router (wird eingebunden wenn security-Modul vorhanden)
 try:

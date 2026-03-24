@@ -569,58 +569,28 @@ export default function Dashboard() {
 
       {/* ── 1. Hero ──────────────────────────────────────────────────────── */}
       <div style={{
-        padding: "var(--s-12) var(--s-8) var(--s-8)",
-        display: "flex", alignItems: "flex-start",
-        justifyContent: "space-between", gap: "var(--s-8)", flexWrap: "wrap",
+        padding: "var(--s-8) var(--s-8) var(--s-5)",
+        display: "flex", alignItems: "center",
+        justifyContent: "space-between", gap: "var(--s-6)", flexWrap: "wrap",
+        borderBottom: "1px solid var(--c-border)",
       }}>
-       <div>
-          <div style={{ fontSize: "var(--text-hero)", fontWeight: 700, letterSpacing: "-0.5px", color: "var(--c-text)", lineHeight: 1.15 }}>
+        <div>
+          <div style={{ fontSize: "var(--text-2xl)", fontWeight: 700, letterSpacing: "-0.3px", color: "var(--c-text)", lineHeight: 1.2 }}>
             {getGreeting()}, {user?.name || user?.email?.split("@")[0] || "Da"}!
           </div>
-          <div style={{ fontSize: "var(--text-lg)", color: "var(--c-text-2)", marginTop: "var(--s-2)" }}>
-            Hier ist dein Überblick für {formatDateDE(new Date())}
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)", marginTop: "var(--s-1)" }}>
+            {formatDateDE(new Date())}
           </div>
-          {/* Demo buttons for testing new features */}
-          <div style={{ marginTop: "var(--s-4)", display: "flex", gap: "var(--s-2)" }}>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => {
-                setMilestoneMilestone(50);
-                setMilestoneMilestoneData({
-                  goalLabel: "Umsatz",
-                  currentValue: 10000,
-                  targetValue: 20000,
-                  unit: "€",
-                });
-                setShowMilestoneCelebration(true);
-              }}
-              style={{ fontSize: "var(--text-xs)" }}
-            >
-              🎯 50% Demo
-            </button>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => {
-                setMilestoneMilestone(100);
-                setMilestoneMilestoneData({
-                  goalLabel: "Umsatz",
-                  currentValue: 20000,
-                  targetValue: 20000,
-                  unit: "€",
-                });
-                setShowMilestoneCelebration(true);
-              }}
-              style={{ fontSize: "var(--text-xs)" }}
-            >
-              🎉 100% Demo
-            </button>
+          <div style={{ marginTop: "var(--s-3)", display: "flex", gap: "var(--s-2)" }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setMilestoneMilestone(50); setMilestoneMilestoneData({ goalLabel: "Umsatz", currentValue: 10000, targetValue: 20000, unit: "€" }); setShowMilestoneCelebration(true); }} style={{ fontSize: "var(--text-xs)" }}>🎯 50%</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setMilestoneMilestone(100); setMilestoneMilestoneData({ goalLabel: "Umsatz", currentValue: 20000, targetValue: 20000, unit: "€" }); setShowMilestoneCelebration(true); }} style={{ fontSize: "var(--text-xs)" }}>🎉 100%</button>
           </div>
         </div>
         <div style={{ flexShrink: 0, textAlign: "center" }}>
           {analysisLoading ? (
-            <div className="skeleton" style={{ width: 120, height: 120, borderRadius: "50%" }} />
+            <div className="skeleton" style={{ width: 100, height: 100, borderRadius: "50%" }} />
           ) : (
-            <HealthRing score={healthScore} size={120} showLabel />
+            <HealthRing score={healthScore} size={100} showLabel />
           )}
         </div>
       </div>
@@ -631,18 +601,16 @@ export default function Dashboard() {
           <div className="error-icon">⚠</div>
           <div style={{ fontSize: "var(--text-md)", fontWeight: 600, color: "var(--c-text)" }}>Fehler beim Laden</div>
           <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)" }}>{kpisError}</div>
-          <button className="btn btn-secondary btn-sm" onClick={fetchKpis}>
-            Erneut versuchen
-          </button>
+          <button className="btn btn-secondary btn-sm" onClick={fetchKpis}>Erneut versuchen</button>
         </div>
       ) : kpisLoading ? (
-        <div style={{ display: "flex", gap: "var(--s-4)", padding: "0 var(--s-8)", flexWrap: "wrap" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--s-3)", padding: "var(--s-5) var(--s-8)" }}>
           {[0, 1, 2, 3].map((i) => (
-            <SkeletonCard key={i} lines={3} style={{ flex: 1 }} />
+            <SkeletonCard key={i} lines={3} />
           ))}
         </div>
       ) : (
-        <div style={{ display: "flex", gap: "var(--s-4)", padding: "0 var(--s-8)", flexWrap: "wrap" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--s-3)", padding: "var(--s-5) var(--s-8)" }}>
           <KPICard
             label="Umsatz"
             value={kpis?.revenue != null ? kpis.revenue : "—"}
@@ -717,7 +685,7 @@ export default function Dashboard() {
       )}
 
       {/* ── 3. Main Grid ─────────────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: "var(--s-4)", padding: "var(--s-4) var(--s-8)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: "var(--s-4)", padding: "var(--s-3) var(--s-8)" }}>
 
         {/* LEFT — Chart */}
         <div
@@ -831,347 +799,8 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* RIGHT — 3 stacked cards */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-4)" }}>
-
-          {/* Card 1 — Recommendation */}
-          <div className="card" style={{ padding: "var(--s-5)", borderLeft: "3px solid var(--c-primary)" }}>
-            <div className="flex items-center justify-between mb-4">
-              <span
-                style={{
-                  fontSize: "var(--text-xs)",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  color: "var(--c-primary)",
-                }}
-              >
-                Was heute zählt
-              </span>
-              <span className="badge badge-info badge-sm">KI</span>
-            </div>
-
-            {analysisLoading ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-2)" }}>
-                <SkeletonLine width="95%" height={13} />
-                <SkeletonLine width="80%" height={13} />
-                <SkeletonLine width="60%" height={13} />
-              </div>
-            ) : topRecommendation ? (
-              <>
-                <p
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "var(--c-text)",
-                    lineHeight: 1.65,
-                    marginBottom: "var(--s-4)",
-                  }}
-                >
-                  {topRecommendation}
-                </p>
-                <Link
-                  to="/analyse"
-                  className="btn btn-ghost btn-sm"
-                  style={{ paddingLeft: 0, color: "var(--c-primary)" }}
-                >
-                  Jetzt angehen →
-                </Link>
-              </>
-            ) : (
-              <p
-                style={{
-                  fontSize: "var(--text-sm)",
-                  color: "var(--c-text-3)",
-                  lineHeight: 1.65,
-                }}
-              >
-                Keine aktuelle Empfehlung verfügbar.{" "}
-                <Link to="/analyse" style={{ color: "var(--c-primary)" }}>
-                  Analyse starten
-                </Link>
-              </p>
-            )}
-          </div>
-
-          {/* Card 2 — Open Tasks */}
-          <div className="card" style={{ padding: "var(--s-5) var(--s-5)" }}>
-            <div className="flex items-center justify-between mb-4">
-              <span className="section-title" style={{ fontSize: "var(--text-md)" }}>
-                Offene Tasks
-              </span>
-              <Link to="/tasks" style={{ fontSize: "var(--text-xs)", color: "var(--c-primary)" }}>Alle →</Link>
-            </div>
-
-            {tasksLoading ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-3)" }}>
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div
-                      className="skeleton"
-                      style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0 }}
-                    />
-                    <SkeletonLine width="70%" height={12} />
-                  </div>
-                ))}
-              </div>
-            ) : tasks.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "var(--s-4) 0",
-                  color: "var(--c-text-3)",
-                  fontSize: "var(--text-sm)",
-                }}
-              >
-                Keine offenen Tasks 🎉
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                {tasks.map((task, idx) => (
-                  <div key={task.id ?? idx}>
-                    {idx > 0 && <div className="divider" style={{ margin: "0" }} />}
-                    <div
-                      className="flex items-center gap-3"
-                      style={{ padding: "10px 0" }}
-                    >
-                      <div
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          background: taskPriorityColor(task.priority),
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span
-                        style={{
-                          flex: 1,
-                          fontSize: "var(--text-sm)",
-                          color: "var(--c-text)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {task.title ?? task.name ?? "Task"}
-                      </span>
-                      <span className={taskStatusBadge(task.status)}>
-                        {taskStatusLabel(task.status)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="divider" />
-            <Link
-              to="/tasks"
-              className="btn btn-ghost btn-sm"
-              style={{ width: "100%", justifyContent: "center", color: "var(--c-text-2)" }}
-            >
-              Alle Tasks ansehen →
-            </Link>
-          </div>
-
-          {/* Card 3 — Latest Alert */}
-          {alertsLoading ? (
-            <SkeletonCard lines={3} />
-          ) : latestAlert ? (
-            <div
-              className="card"
-              style={{
-                padding: "var(--s-5) var(--s-5)",
-                borderLeft: `3px solid ${
-                  latestAlert.severity?.toLowerCase() === "critical" ||
-                  latestAlert.severity?.toLowerCase() === "high"
-                    ? "var(--c-danger)"
-                    : "var(--c-warning)"
-                }`,
-              }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span
-                  style={{
-                    fontSize: "var(--text-xs)",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    color:
-                      latestAlert.severity?.toLowerCase() === "critical" ||
-                      latestAlert.severity?.toLowerCase() === "high"
-                        ? "var(--c-danger)"
-                        : "var(--c-warning)",
-                  }}
-                >
-                  Letzter Alert
-                </span>
-                {latestAlert.severity && (
-                  <span
-                    className={`badge badge-sm ${
-                      latestAlert.severity?.toLowerCase() === "critical" ||
-                      latestAlert.severity?.toLowerCase() === "high"
-                        ? "badge-danger"
-                        : "badge-warning"
-                    }`}
-                  >
-                    {latestAlert.severity}
-                  </span>
-                )}
-              </div>
-              <p
-                style={{
-                  fontSize: "var(--text-sm)",
-                  color: "var(--c-text)",
-                  lineHeight: 1.6,
-                  marginBottom: "var(--s-3)",
-                }}
-              >
-                {latestAlert.message ?? latestAlert.text ?? latestAlert.title ?? "Kein Alerttext vorhanden."}
-              </p>
-              <Link
-                to="/alerts"
-                className="btn btn-ghost btn-sm"
-                style={{ paddingLeft: 0, color: "var(--c-text-2)" }}
-              >
-                Details →
-              </Link>
-            </div>
-          ) : (
-            <div className="card" style={{ padding: "var(--s-5)" }}>
-              <div className="flex items-center gap-3">
-                <span style={{ fontSize: 24 }}>✅</span>
-                <div>
-                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--c-text)" }}>
-                    Keine Alerts
-                  </div>
-                  <div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }}>
-                    Alles läuft normal.
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* ── 3.5. Weekly Review + Goal Adjustment + Milestone Celebration ─ */}
-      {showWeeklyReview && (
-        <div style={{ padding: "0 var(--s-8) var(--s-8)" }}>
-          <WeeklyReview
-            completedRecommendations={2}
-            totalRecommendations={3}
-            metricName="Umsatz"
-            metricChange={840}
-            metricUnit="€"
-            nextRecommendations={[
-              {
-                id: 1,
-                title: "Email-Kampagne optimieren",
-                description: "Erhöhe Email-Open-Rates durch Subject-Line Tests und Personalisierung",
-                impact: "Potential +5% Traffic",
-                icon: "📧",
-              },
-              {
-                id: 2,
-                title: "Landing Page A/B Test",
-                description: "Teste neue CTA Button Farbe und Copy Variation",
-                impact: "Potential +2% Conversion",
-                icon: "🎨",
-              },
-              {
-                id: 3,
-                title: "Kundenbindungs-Programm",
-                description: "Implementiere Loyalty Rewards für Wiederholungskäufe",
-                impact: "Potential +€500/month",
-                icon: "🎁",
-              },
-            ]}
-            onRecommendationClick={(rec) => {
-              console.log("Clicked recommendation:", rec);
-            }}
-          />
-        </div>
-      )}
-
-      {showGoalAdjustment && goals.length > 0 && (
-        <div style={{ padding: "0 var(--s-8) var(--s-8)" }}>
-          <GoalAdjustmentSuggestion
-            goalLabel={goals[0]?.metric_label || "Umsatz"}
-            currentValue={goals[0]?.current_value || 15000}
-            targetValue={goals[0]?.target_value || 20000}
-            previousValue={goals[0]?.current_value ? goals[0].current_value - 1000 : 14000}
-            unit={goals[0]?.metric_label?.includes("€") ? "€" : ""}
-            daysInPeriod={30}
-            daysPassed={15}
-            onAccept={(newTarget) => {
-              toast.success(`Ziel auf ${newTarget} angepasst!`);
-              setShowGoalAdjustment(false);
-            }}
-            onDismiss={() => {
-              setShowGoalAdjustment(false);
-            }}
-            onClose={() => {
-              setShowGoalAdjustment(false);
-            }}
-          />
-        </div>
-      )}
-
-      {/* ── 4. Goals Section ─────────────────────────────────────────────── */}
-      <div className="mt-8">
-        <div style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border-2)", borderRadius: "var(--r-lg)", padding: "var(--s-5) var(--s-6)" }}>
-        <div className="section-header">
-          <span className="section-title">Aktuelle Ziele</span>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => setGoalSheetOpen(true)}
-          >
-            + Ziel hinzufügen
-          </button>
-        </div>
-
-        {goalsError ? (
-          <div className="error-state">
-            <div className="error-icon">⚠</div>
-            <div style={{ fontSize: "var(--text-md)", fontWeight: 600, color: "var(--c-text)" }}>Fehler</div>
-            <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)" }}>{goalsError}</div>
-            <button className="btn btn-secondary btn-sm" onClick={fetchGoals}>
-              Erneut versuchen
-            </button>
-          </div>
-        ) : goalsLoading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-3)" }}>
-            {[0, 1, 2].map((i) => (
-              <SkeletonCard key={i} lines={2} style={{ padding: "var(--s-4) var(--s-5)" }} />
-            ))}
-          </div>
-        ) : goals.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">🎯</div>
-            <div className="empty-title">Noch keine Ziele</div>
-            <div className="empty-text">
-              Setze dein erstes Ziel um deinen Fortschritt zu verfolgen.
-            </div>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => setGoalSheetOpen(true)}
-            >
-              Erstes Ziel setzen
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-3)" }}>
-            {goals.map((goal, idx) => (
-              <GoalRow key={goal.id ?? idx} goal={goal} />
-            ))}
-          </div>
-        )}
-        </div>
-      </div>
-
-      {/* ── 5. AI Transparency Dashboard ──────────────────── */}
-      <AITransparencyDashboard />
 
       {/* ── Sheets ───────────────────────────────────────────────────────── */}
       <KpiDetailSheet
@@ -1181,15 +810,6 @@ export default function Dashboard() {
         kpis={kpis}
       />
 
-      <AddGoalSheet
-        isOpen={goalSheetOpen}
-        onClose={() => setGoalSheetOpen(false)}
-        authHeader={authHeader}
-        onSaved={() => {
-          setGoalSheetOpen(false);
-          fetchGoals();
-        }}
-      />
 
       {/* ── Milestone Celebration ────────────────────────────────────────── */}
       <MilestoneCelebration

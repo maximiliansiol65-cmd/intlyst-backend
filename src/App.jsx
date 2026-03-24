@@ -22,7 +22,8 @@ import Settings   from "./pages/Settings";
 import ABTests    from "./pages/ABTests";
 import Market     from "./pages/Market";
 import Mehr       from "./pages/Mehr";
-import ReportsHub from "./pages/ReportsHub";
+import ReportsHub    from "./pages/ReportsHub";
+import Integrations  from "./pages/Integrations";
 
 // ── Loader ────────────────────────────────────────────────────────────────────
 function Gear({ size, duration, direction = 1, style = {} }) {
@@ -152,7 +153,8 @@ function AppRoutes() {
             <Route path="/settings"  element={<Settings />} />
             <Route path="/abtests"   element={<ABTests />} />
             <Route path="/market"    element={<Market />} />
-            <Route path="/mehr"      element={<Mehr />} />
+            <Route path="/mehr"         element={<Mehr />} />
+            <Route path="/integrations" element={<Integrations />} />
 
             {/* Legacy redirects */}
             <Route path="/insights"        element={<Navigate to="/analyse" replace />} />
