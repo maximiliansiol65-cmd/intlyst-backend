@@ -5,10 +5,10 @@ API endpoints for Schicht 12: Action Generation Engine.
 Exposes recommended actions with ICE-scores to frontend.
 
 Endpoints:
-  GET /api/actions/recommended — Top actions by ICE score
-  POST /api/actions/{id}/implement — Mark action as implemented
-  GET /api/actions/accuracy — ML learning metrics
-  POST /api/actions/{id}/feedback — User feedback on action
+  GET /api/actions/ Top actions by ICE scorerecommended 
+  POST /api/actions/{id}/ Mark action as implementedimplement 
+  GET /api/actions/ ML learning metricsaccuracy 
+  POST /api/actions/{id}/ User feedback on actionfeedback 
 
 Integration:
   - Calls analytics.action_engine.generate_action_plan()
@@ -148,8 +148,7 @@ async def get_recommended_actions(
       ],
       "top_action": {...},
       "total_impact_euros": 3200.0,
-      "summary": "💡 8 Aktionen identifiziert mit €3,200 potentiellem Impact"
-    }
+    }      "summary": "
     ```
     """
     try:
@@ -226,7 +225,7 @@ async def get_action_accuracy():
     Shows how accurate our recommendations have been for this user.
     
     Returns:
-    - categories: Dict of category → accuracy stats
+ accuracy stats
     - overall_accuracy: 0-100 overall accuracy
     - most_reliable: Best performing category
     - least_reliable: Category needing improvement
@@ -336,7 +335,7 @@ async def submit_action_feedback(
             "action_id": action_id,
             "helpful": helpful,
             "reason": reason or "No reason provided",
-            "message": "Danke für dein Feedback! Hilft uns besser zu werden.",
+            {                 echo ___BEGIN___COMMAND_OUTPUT_MARKER___;                 PS1="";PS2="";unset HISTFILE;                 EC=$?;                 echo "___BEGIN___COMMAND_DONE_MARKER___$EC";             }r dein Feedback! Hilft uns besser zu werden.",
             "recorded_at": datetime.utcnow().isoformat(),
         }
     

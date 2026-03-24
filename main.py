@@ -64,7 +64,7 @@ from routers import (
     customers, benchmark, billing,
     analytics_integrations, auth, team, intlyst, growth,
     reports, abtests, cohorts, funnels, custom_kpis, workspaces, ga4,
-    events, briefing, instagram,
+    events, briefing, instagram, proactive,
 )
 from api.email_preferences_routes import router as email_prefs_router
 
@@ -282,6 +282,7 @@ app.include_router(funnels.router)
 app.include_router(custom_kpis.router)
 app.include_router(ga4.router)
 app.include_router(events.router)
+app.include_router(proactive.router)
 app.include_router(briefing.router)
 app.include_router(instagram.router)
 app.include_router(email_prefs_router)
