@@ -1,17 +1,27 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useCountUp } from "../../hooks/useCountUp";
 
+// Freshness badge config
+const FRESHNESS_CONFIG = {
+  live:      { color: "var(--c-success)",  label: "Live",     bg: "rgba(52,199,89,0.12)"  },
+  today:     { color: "#0A84FF",            label: "Heute",    bg: "rgba(10,132,255,0.12)" },
+  yesterday: { color: "var(--c-text-3)",   label: "Gestern",  bg: "var(--c-surface-2)"    },
+  stale:     { color: "var(--c-warning)",  label: "Veraltet", bg: "rgba(255,159,10,0.12)" },
+};
+
 /**
- * KPICard — Enhanced with click-to-expand details
+ * KPICard — Enhanced with freshness badge, source tooltip, copy-on-hover
  *
- * value:    number | string
- * label:    string
- * trend:    number (positive = up, negative = down)  e.g. 12.3 or -4.1
- * unit:     string  e.g. "€" | "%" | ""
- * compare:  string  e.g. "vs. letzter Monat"
- * details:  object with extended data {previous, absolute_change, forecast, period_type}
- * animate:  boolean (default true) — counter animation
- * onClick:  () => void
+ * value:     number | string
+ * label:     string
+ * trend:     number (positive = up, negative = down)  e.g. 12.3 or -4.1
+ * unit:      string  e.g. "€" | "%" | ""
+ * compare:   string  e.g. "vs. letzter Monat"
+ * details:   object with extended data {previous, absolute_change, forecast, period_type}
+ * freshness: "live" | "today" | "yesterday" | "stale" | undefined
+ * source:    string  e.g. "Stripe + GA4"
+ * animate:   boolean (default true) — counter animation
+ * onClick:   () => void
  */
 export function KPICard({
   value,
@@ -20,11 +30,15 @@ export function KPICard({
   unit = "",
   compare = "",
   details = null,
+  freshness,
+  source,
   animate = true,
   onClick,
   className = "",
 }) {
   const [showDetails, setShowDetails] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [valueHovered, setValueHovered] = useState(false);
   const numericValue = parseFloat(String(value).replace(/[^0-9.-]/g, ""));
   const animated = useCountUp(
     animate && !isNaN(numericValue) ? numericValue : 0,
@@ -46,6 +60,17 @@ export function KPICard({
   const trendNum = trend != null ? parseFloat(trend) : null;
   const isUp = trendNum != null && trendNum >= 0;
   const hasDetails = details && Object.keys(details).length > 0;
+  const freshConfig = freshness ? FRESHNESS_CONFIG[freshness] : null;
+
+  const copyValue = useCallback((e) => {
+    e.stopPropagation();
+    const trendStr = trendNum != null ? ` (${isUp ? "↑" : "↓"} ${Math.abs(trendNum).toFixed(1)}%)` : "";
+    const text = `${label}: ${displayValue}${trendStr}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }).catch(() => {});
+  }, [label, displayValue, trendNum, isUp]);
 
   const handleCardClick = () => {
     if (hasDetails) setShowDetails(true);
@@ -62,7 +87,7 @@ export function KPICard({
   return (
     <>
       <div
-        className={`kpi-card ${hasDetails ? "kpi-card-expandable" : ""} ${className}`}
+        className={`kpi-card tooltip-trigger ${hasDetails ? "kpi-card-expandable" : ""} ${className}`}
         onClick={handleCardClick}
         role={hasDetails || onClick ? "button" : undefined}
         tabIndex={hasDetails || onClick ? 0 : undefined}
@@ -73,8 +98,63 @@ export function KPICard({
           position: "relative",
         }}
       >
+        {/* Freshness badge — top right */}
+        {freshConfig && (
+          <div style={{
+            position: "absolute", top: "var(--s-3)", right: "var(--s-3)",
+            display: "flex", alignItems: "center", gap: 3,
+            background: freshConfig.bg,
+            borderRadius: "var(--r-full)",
+            padding: "2px 6px",
+            fontSize: 10,
+            fontWeight: 500,
+            color: freshConfig.color,
+          }}>
+            <span
+              className={freshness === "live" ? "freshness-dot pulse-live" : "freshness-dot"}
+              style={{ background: freshConfig.color }}
+            />
+            {freshConfig.label}
+          </div>
+        )}
+
         <div className="kpi-label">{label}</div>
-        <div className="kpi-value tabular">{displayValue}</div>
+
+        {/* Value with copy-on-hover */}
+        <div
+          style={{ position: "relative", display: "inline-block" }}
+          onMouseEnter={() => setValueHovered(true)}
+          onMouseLeave={() => setValueHovered(false)}
+        >
+          <div className="kpi-value tabular">{displayValue}</div>
+          {valueHovered && (
+            <button
+              onClick={copyValue}
+              title="Wert kopieren"
+              style={{
+                position: "absolute", right: -24, top: "50%", transform: "translateY(-50%)",
+                background: "none", border: "none", cursor: "pointer",
+                color: copied ? "var(--c-success)" : "var(--c-text-3)",
+                fontSize: 13, padding: 2, display: "flex", alignItems: "center",
+                transition: "color 0.15s ease",
+              }}
+            >
+              {copied ? "✓" : "⎘"}
+            </button>
+          )}
+          {copied && (
+            <div style={{
+              position: "absolute", top: -24, left: "50%", transform: "translateX(-50%)",
+              background: "var(--c-success)", color: "#fff",
+              fontSize: 10, fontWeight: 600, padding: "2px 7px",
+              borderRadius: "var(--r-full)", whiteSpace: "nowrap",
+              pointerEvents: "none",
+            }}>
+              Kopiert!
+            </div>
+          )}
+        </div>
+
         {(trendNum != null || compare) && (
           <div className="kpi-footer">
             {trendNum != null && (
@@ -86,8 +166,15 @@ export function KPICard({
           </div>
         )}
         {hasDetails && (
-          <div className="kpi-expand-icon" style={{ position: "absolute", top: "var(--s-3)", right: "var(--s-3)", opacity: 0.5 }}>
+          <div className="kpi-expand-icon" style={{ position: "absolute", bottom: "var(--s-3)", right: "var(--s-3)", opacity: 0.5 }}>
             ⤢
+          </div>
+        )}
+
+        {/* Source tooltip */}
+        {source && (
+          <div className="tooltip-content" style={{ bottom: "calc(100% + 6px)" }}>
+            Quelle: {source}
           </div>
         )}
       </div>

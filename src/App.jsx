@@ -10,6 +10,7 @@ import CommandPalette from "./components/search/CommandPalette";
 import OfflineBanner from "./components/OfflineBanner";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ProductTour from "./components/onboarding/ProductTour";
+import WelcomeScreen from "./components/onboarding/WelcomeScreen";
 import { useAuth } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -98,8 +99,12 @@ function OnboardedRoute() {
 // ── App Shell ─────────────────────────────────────────────────────────────────
 function AppShell() {
   const location = useLocation();
+  const { user } = useAuth();
   const [chatOpen, setChatOpen]   = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return localStorage.getItem("intlyst_welcomed") !== "1";
+  });
 
   // CMD+K global shortcut
   useEffect(() => {
@@ -135,6 +140,9 @@ function AppShell() {
       <ChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />
       <CommandPalette isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <ProductTour />
+      {user && showWelcome && (
+        <WelcomeScreen onComplete={() => setShowWelcome(false)} />
+      )}
     </div>
   );
 }

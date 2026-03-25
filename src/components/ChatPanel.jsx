@@ -31,31 +31,27 @@ const IcoThumb = () => (
   </svg>
 );
 
-// ── Proaktive Vorschläge basierend auf Zeit ───────────────────────────────────
+// ── Proaktive Vorschläge basierend auf Zeit (4 Stück, 2×2 Grid) ──────────────
 function getContextualSuggestions() {
   const h = new Date().getHours();
-  const day = new Date().getDay();
-  const base = [
-    "Wie war mein Umsatz heute?",
-    "Was sind meine 3 wichtigsten Aufgaben jetzt?",
-    "Warum ist mein Traffic gesunken?",
+  if (h < 12) return [
+    "☀️ Wie war mein Umsatz gestern?",
+    "📈 Was soll ich heute priorisieren?",
+    "🎯 Bin ich auf Kurs mit meinem Ziel?",
+    "📊 Zeig mir meine Top-KPIs",
   ];
-  if (h < 10) return [
-    "Was sollte ich heute als erstes anpacken?",
-    "Wie war der gestrige Tag zusammengefasst?",
-    ...base.slice(0, 1),
+  if (h < 18) return [
+    "💰 Umsatz-Update heute",
+    "🔍 Welche Kunden sind abgewandert?",
+    "📱 Social Media Performance",
+    "⚡ Offene Tasks anzeigen",
   ];
-  if (h >= 17) return [
-    "Mach ein Tagesresümee für mich",
-    "Was hat heute gut funktioniert?",
-    "Was sollte ich morgen priorisieren?",
+  return [
+    "🌙 Zusammenfassung des Tages",
+    "📊 Vergleich Heute vs. Gestern",
+    "✅ Was habe ich heute erreicht?",
+    "🔮 Prognose für morgen",
   ];
-  if (day === 1) return [
-    "Wochenrückblick: Wie war letzte Woche?",
-    "Was sind meine Ziele für diese Woche?",
-    ...base.slice(0, 1),
-  ];
-  return base;
 }
 
 // ── Command detection ─────────────────────────────────────────────────────────
@@ -353,18 +349,19 @@ export default function ChatPanel({ isOpen, onClose }) {
             borderBottom: "1px solid var(--c-border)",
             maxHeight: 280, overflowY: "auto",
             zIndex: 10,
+            boxShadow: "var(--shadow-md)",
           }}>
             <div style={{ padding: "var(--s-3) var(--s-4)", fontSize: "var(--text-xs)", color: "var(--c-text-3)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Letzte Gespräche
             </div>
-            {sessions.map(s => (
+            {sessions.slice(0, 5).map(s => (
               <button
                 key={s.id}
                 onClick={() => loadSession(s)}
                 style={{
                   width: "100%", textAlign: "left",
                   padding: "var(--s-2) var(--s-4)",
-                  display: "flex", gap: "var(--s-2)",
+                  display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--s-2)",
                   borderBottom: "1px solid var(--c-border)",
                   fontSize: "var(--text-sm)", color: "var(--c-text-2)",
                   transition: "background var(--dur-fast) ease",
@@ -373,9 +370,14 @@ export default function ChatPanel({ isOpen, onClose }) {
                 onMouseEnter={e => e.currentTarget.style.background = "var(--c-surface-2)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}
               >
-                <span style={{ flexShrink: 0, color: "var(--c-text-4)" }}>💬</span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {s.preview}
+                <div style={{ display: "flex", gap: "var(--s-2)", overflow: "hidden" }}>
+                  <span style={{ flexShrink: 0, color: "var(--c-text-4)" }}>💬</span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {s.preview}
+                  </span>
+                </div>
+                <span style={{ flexShrink: 0, fontSize: 10, color: "var(--c-text-4)" }}>
+                  {s.ts ? new Date(s.ts).toLocaleDateString("de-DE", { day: "numeric", month: "short" }) : ""}
                 </span>
               </button>
             ))}
@@ -384,20 +386,40 @@ export default function ChatPanel({ isOpen, onClose }) {
 
         {/* Messages or empty state */}
         {messages.length === 0 && !loading ? (
-          <div className="chat-empty">
-            <div style={{ fontSize: 40, lineHeight: 1, color: "var(--c-text-4)" }}>✦</div>
-            <div style={{ fontSize: "var(--text-md)", color: "var(--c-text-2)", fontWeight: 500 }}>
-              Stell mir eine Frage zu deinen Daten
+          <div className="chat-empty" style={{ justifyContent: "flex-start", paddingTop: "var(--s-8)" }}>
+            {/* Big logo + title */}
+            <div style={{ textAlign: "center", marginBottom: "var(--s-5)" }}>
+              <div style={{ fontSize: 48, lineHeight: 1, color: "var(--c-primary)", marginBottom: "var(--s-2)" }}>✦</div>
+              <div style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--c-text)", letterSpacing: "-0.3px" }}>
+                INTLYST AI
+              </div>
+              <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)", marginTop: "var(--s-1)", maxWidth: 260, margin: "var(--s-1) auto 0" }}>
+                Dein KI-Berater für datengetriebene Entscheidungen
+              </div>
             </div>
-            <div className="chat-suggestion-pills">
+
+            {/* 2×2 suggestion grid */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "var(--s-2)",
+              width: "100%",
+              padding: "0 var(--s-1)",
+            }}>
               {suggestions.map((s, i) => (
-                <button key={i} className="chat-suggestion-pill" onClick={() => send(s)}>
+                <button
+                  key={i}
+                  className="chat-suggestion-pill"
+                  onClick={() => send(s)}
+                  style={{ textAlign: "left", padding: "var(--s-3)", lineHeight: 1.3, fontSize: "var(--text-xs)" }}
+                >
                   {s}
                 </button>
               ))}
             </div>
+
             <div style={{
-              marginTop: "var(--s-2)",
+              marginTop: "var(--s-4)",
               padding: "var(--s-2) var(--s-3)",
               background: "var(--c-surface-2)",
               borderRadius: "var(--r-sm)",
@@ -504,6 +526,19 @@ export default function ChatPanel({ isOpen, onClose }) {
           >
             <IcoSend />
           </button>
+        </div>
+
+        {/* Privacy footer */}
+        <div style={{
+          padding: "var(--s-2) var(--s-4)",
+          borderTop: "1px solid var(--c-border)",
+          fontSize: 10,
+          color: "var(--c-text-4)",
+          textAlign: "center",
+          letterSpacing: "0.02em",
+          background: "var(--c-surface)",
+        }}>
+          🔒 Daten bleiben in deinem Workspace · Powered by Claude
         </div>
       </aside>
     </>

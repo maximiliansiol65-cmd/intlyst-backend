@@ -24,6 +24,108 @@ import GoalAdjustmentSuggestion from "../components/goals/GoalAdjustmentSuggesti
 import StrategyBanner from "../components/StrategyBanner";
 import GettingStartedWidget from "../components/onboarding/GettingStartedWidget";
 
+// ── DataQualityBar ────────────────────────────────────────────────────────────
+function DataQualityBar({ authHeader }) {
+  const [integrations, setIntegrations] = useState(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/integrations", { headers: authHeader() })
+      .then(r => { if (r.status === 401) return null; return r.json(); })
+      .then(data => { if (data) setIntegrations(data); })
+      .catch(() => {});
+  }, []); // eslint-disable-line
+
+  if (!integrations) return null;
+
+  const checks = [
+    { key: "stripe",           label: "Stripe",    weight: 15, why: "Umsatz & Transaktionen" },
+    { key: "google_analytics", label: "GA4",       weight: 15, why: "Traffic & Conversion"   },
+    { key: "shopify",          label: "Shopify",   weight: 10, why: "Shop-Daten"              },
+    { key: "klaviyo",          label: "Klaviyo",   weight:  5, why: "E-Mail-Marketing"        },
+    { key: "facebook_ads",     label: "FB Ads",    weight:  5, why: "Werbe-Daten"             },
+  ];
+
+  const connected = checks.reduce((acc, c) => {
+    acc[c.key] = !!(integrations[c.key]?.connected || integrations[c.key]?.active);
+    return acc;
+  }, {});
+
+  const missing = checks.reduce((sum, c) => sum + (connected[c.key] ? 0 : c.weight), 0);
+  const pct = Math.max(0, 100 - missing);
+  const color = pct >= 80 ? "var(--c-success)" : pct >= 60 ? "var(--c-warning)" : "var(--c-danger)";
+
+  return (
+    <div style={{ padding: "0 var(--s-8)", marginTop: "var(--s-3)" }}>
+      <div
+        style={{
+          background: "var(--c-surface)",
+          border: "1px solid var(--c-border)",
+          borderRadius: "var(--r-md)",
+          padding: "var(--s-3) var(--s-4)",
+          cursor: "pointer",
+        }}
+        onClick={() => setExpanded(v => !v)}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--s-3)", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--s-2)", flexShrink: 0 }}>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)", fontWeight: 500 }}>
+              Datenqualität:
+            </span>
+            <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color }}>
+              {pct}%
+            </span>
+            <div style={{ width: 60, height: 4, background: "var(--c-surface-2)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2, transition: "width 0.5s ease" }} />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "var(--s-2)", flexWrap: "wrap", flex: 1 }}>
+            {checks.map(c => (
+              <span
+                key={c.key}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  fontSize: 10, fontWeight: 500,
+                  color: connected[c.key] ? "var(--c-success)" : "var(--c-text-3)",
+                }}
+              >
+                <span style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: connected[c.key] ? "var(--c-success)" : "var(--c-text-4)",
+                  flexShrink: 0,
+                }} />
+                {c.label}
+              </span>
+            ))}
+          </div>
+          <span style={{ fontSize: 10, color: "var(--c-text-4)" }}>{expanded ? "▲" : "▼"}</span>
+        </div>
+
+        {expanded && (
+          <div style={{ marginTop: "var(--s-3)", borderTop: "1px solid var(--c-border)", paddingTop: "var(--s-3)", display: "flex", flexDirection: "column", gap: "var(--s-2)" }}>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)", fontWeight: 500, marginBottom: "var(--s-1)" }}>
+              Fehlende Integrationen verbessern deine Analyse:
+            </div>
+            {checks.filter(c => !connected[c.key]).map(c => (
+              <div key={c.key} style={{ display: "flex", alignItems: "center", gap: "var(--s-2)", fontSize: "var(--text-xs)", color: "var(--c-text-2)" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--c-text-4)", flexShrink: 0 }} />
+                <span style={{ fontWeight: 500 }}>{c.label}</span>
+                <span style={{ color: "var(--c-text-3)" }}>— {c.why}</span>
+                <span style={{ marginLeft: "auto", color: "var(--c-danger)", fontWeight: 600 }}>−{c.weight}%</span>
+              </div>
+            ))}
+            {checks.every(c => connected[c.key]) && (
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--c-success)" }}>
+                ✓ Alle wichtigen Datenquellen sind verbunden!
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function getGreeting() {
@@ -604,6 +706,9 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* ── 1c. Data Quality Bar ─────────────────────────────────────────── */}
+      <DataQualityBar authHeader={authHeader} />
+
       {/* ── 2. KPI Strip ─────────────────────────────────────────────────── */}
       {kpisError ? (
         <div className="error-state">
@@ -626,6 +731,8 @@ export default function Dashboard() {
             unit="€"
             trend={kpis?.trend_revenue ?? null}
             compare="vs. letzter Monat"
+            freshness="live"
+            source="Stripe"
             details={{
               previous: kpis?.revenue_previous,
               absolute_change: kpis?.revenue_change,
@@ -642,6 +749,8 @@ export default function Dashboard() {
             unit=""
             trend={kpis?.trend_traffic ?? null}
             compare="vs. letzter Monat"
+            freshness="today"
+            source="GA4"
             details={{
               previous: kpis?.traffic_previous,
               absolute_change: kpis?.traffic_change,
@@ -658,6 +767,8 @@ export default function Dashboard() {
             unit=""
             trend={kpis?.trend_new_customers ?? null}
             compare="vs. letzter Monat"
+            freshness="today"
+            source="Stripe + GA4"
             details={{
               previous: kpis?.new_customers_previous,
               absolute_change: kpis?.new_customers_change,
@@ -680,6 +791,8 @@ export default function Dashboard() {
             unit="%"
             trend={kpis?.trend_conversion_rate ?? null}
             compare="vs. letzter Monat"
+            freshness="today"
+            source="GA4"
             details={{
               previous: kpis?.conversion_rate_previous ? (kpis.conversion_rate_previous > 1 ? kpis.conversion_rate_previous : kpis.conversion_rate_previous * 100) : null,
               absolute_change: kpis?.conversion_rate_change,
