@@ -24,6 +24,8 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 logger = logging.getLogger("audit")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
+from rate_limit import limiter
+
 SECRET_KEY = os.getenv("JWT_SECRET", "")
 if not is_configured_secret(SECRET_KEY, min_length=32):
     raise RuntimeError("JWT_SECRET muss gesetzt, hinreichend lang und frei von Standardwerten sein!")
@@ -352,7 +354,8 @@ def get_current_user(
 # ── Endpunkte ─────────────────────────────────────────────────────────────────
 
 @router.post("/register", response_model=LoginResponse)
-def register(body: RegisterRequest, request: Request, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def register(request: Request, body: RegisterRequest, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == body.email.lower()).first()
     if existing:
         raise HTTPException(status_code=409, detail="E-Mail bereits registriert.")
@@ -385,6 +388,7 @@ def register(body: RegisterRequest, request: Request, db: Session = Depends(get_
 
 
 @router.post("/login", response_model=LoginResponse)
+@limiter.limit("5/minute")
 def login(
     request: Request,
     username: Optional[str] = Form(default=None),
@@ -487,6 +491,14 @@ def update_profile(
     return {"message": "Profil aktualisiert."}
 
 
+@router.post("/logout")
+def logout(request: Request, current_user: User = Depends(get_current_user)):
+    """Logout — client soll Token verwerfen. Server loggt das Ereignis."""
+    logger.info("LOGOUT user_id=%s ip=%s", current_user.id,
+                request.client.host if request.client else "unknown")
+    return {"message": "Erfolgreich abgemeldet."}
+
+
 @router.post("/change-password")
 def change_password(
     body: ChangePasswordRequest,
@@ -537,7 +549,8 @@ class VerifyCodeRequest(BaseModel):
     code: str
 
 @router.post("/send-code")
-def send_code(body: SendCodeRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def send_code(request: Request, body: SendCodeRequest, db: Session = Depends(get_db)):
     """Send a 6-digit verification code to the given email."""
     # Delete old codes for this email
     db.query(VerificationCode).filter_by(email=body.email).delete()

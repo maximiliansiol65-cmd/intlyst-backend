@@ -17,6 +17,7 @@ import {
   Badge,
   Card,
 } from "../components/ui";
+import StrategyBanner from "../components/StrategyBanner";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -1371,6 +1372,7 @@ export default function Analyse() {
         background: "var(--c-bg)",
       }}
     >
+      <StrategyBanner />
       {/* Page header */}
       <div
         style={{
