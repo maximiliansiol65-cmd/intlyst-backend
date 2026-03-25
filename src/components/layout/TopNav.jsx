@@ -2,9 +2,8 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useLanguage } from "../../contexts/LanguageContext";
+import NotificationCenter from "../notifications/NotificationCenter";
 
-/* ── Icons ─────────────────────────────────────────────────────────────────── */
 const IcoHome = () => (
   <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
     <path d="M2 6.5L8 2l6 4.5V14a1 1 0 01-1 1H3a1 1 0 01-1-1V6.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
@@ -29,33 +28,17 @@ const IcoPeople = () => (
     <path d="M11.5 7a1.5 1.5 0 110-3M13.5 14c0-2-1-3.6-2.5-4.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
   </svg>
 );
-const IcoPin = () => (
+const IcoSocial = () => (
   <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M8 1C5.8 1 4 2.8 4 5c0 3 4 9 4 9s4-6 4-9c0-2.2-1.8-4-4-4z" stroke="currentColor" strokeWidth="1.3"/>
-    <circle cx="8" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.3"/>
+    <circle cx="13" cy="3" r="2" stroke="currentColor" strokeWidth="1.3"/>
+    <circle cx="3"  cy="8" r="2" stroke="currentColor" strokeWidth="1.3"/>
+    <circle cx="13" cy="13" r="2" stroke="currentColor" strokeWidth="1.3"/>
+    <path d="M5 7l6-3M5 9l6 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
   </svg>
 );
 const IcoCheck = () => (
   <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
     <path d="M2 9l4 4 8-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-const IcoBell = () => (
-  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M8 1.5A4.5 4.5 0 003.5 6v3l-1 2h11l-1-2V6A4.5 4.5 0 008 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
-    <path d="M6.5 13.5a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-const IcoFlask = () => (
-  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M6 2v5L2 13h12L10 7V2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M5 2h6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-const IcoGlobe = () => (
-  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/>
-    <path d="M2 8h12M8 2c-2 2-2 8 0 12M8 2c2 2 2 8 0 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
   </svg>
 );
 const IcoGear = () => (
@@ -64,50 +47,22 @@ const IcoGear = () => (
     <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.5 1.5M11.4 11.4l1.5 1.5M11.4 4.6l-1.5 1.5M4.6 11.4l-1.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
   </svg>
 );
-const IcoBellLg = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-    <path d="M9 1.5A5 5 0 004 6.5v3l-1.5 2.5h13L14 9.5v-3A5 5 0 009 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
-    <path d="M7 15.5a2 2 0 004 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-
-const IcoReport = () => (
-  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M3 2h10v12H3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
-    <path d="M5 4h6M5 7h6M5 10h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-
-const NAV_LINKS_BASE = [
-  { to: "/",          labelKey: "dashboard",  Icon: IcoHome,   end: true },
-  { to: "/analyse",   labelKey: "analyse",    Icon: IcoChart },
-  { to: "/wachstum",  labelKey: "wachstum",   Icon: IcoRocket },
-  { to: "/kunden",    labelKey: "kunden",     Icon: IcoPeople },
-  { to: "/standort",  labelKey: "standort",   Icon: IcoPin },
-  { to: "/reports",   labelKey: "reports",    Icon: IcoReport },
-  { to: "/market",    labelKey: "market",     Icon: IcoGlobe },
-  { to: "/abtests",   labelKey: "abtests",    Icon: IcoFlask },
-  { to: "/tasks",     labelKey: "tasks",      Icon: IcoCheck },
-  { to: "/alerts",    labelKey: "alerts",     Icon: IcoBell },
-  { to: "/settings",  labelKey: "settings",   Icon: IcoGear },
+const NAV_LINKS = [
+  { to: "/",         label: "Dashboard", Icon: IcoHome,   end: true },
+  { to: "/analyse",  label: "Analyse",   Icon: IcoChart },
+  { to: "/wachstum", label: "Wachstum",  Icon: IcoRocket },
+  { to: "/kunden",   label: "Kunden",    Icon: IcoPeople },
+  { to: "/social",   label: "Social",    Icon: IcoSocial },
+  { to: "/aufgaben", label: "Aufgaben",  Icon: IcoCheck },
 ];
 
-export default function TopNav({ onAiClick }) {
+export default function TopNav({ onAiClick, onSearchClick }) {
   const { user, authHeader, activeWorkspaceId, setActiveWorkspace } = useAuth();
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const [workspaces, setWorkspaces] = useState([]);
-  const [alertCount, setAlertCount] = useState(0);
-
-  // Dynamically create NAV_LINKS with translations
-  const NAV_LINKS = NAV_LINKS_BASE.map(link => ({
-    ...link,
-    label: t(link.labelKey)
-  }));
 
   useEffect(() => {
     loadWorkspaces();
-    loadAlertCount();
   }, [activeWorkspaceId]); // eslint-disable-line
 
   async function loadWorkspaces() {
@@ -116,31 +71,20 @@ export default function TopNav({ onAiClick }) {
       if (!res.ok) return;
       const data = await res.json();
       setWorkspaces(Array.isArray(data) ? data : []);
-    } catch { /* noop */ }
-  }
-
-  async function loadAlertCount() {
-    try {
-      const res = await fetch("/api/alerts?limit=100", { headers: authHeader() });
-      if (!res.ok) return;
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : (data?.alerts ?? []);
-      setAlertCount(list.filter(a => !a.is_read).length);
-    } catch { /* noop */ }
+    } catch { }
   }
 
   async function switchWorkspace(id) {
     if (!id) return;
     try {
-      const res = await fetch("/api/workspaces/switch", {
+      await fetch("/api/workspaces/switch", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify({ workspace_id: Number(id) }),
       });
-      if (!res.ok) return;
       setActiveWorkspace(Number(id));
       window.location.reload();
-    } catch { /* noop */ }
+    } catch { }
   }
 
   const initials = (user?.name || user?.email || "?")[0].toUpperCase();
@@ -150,7 +94,7 @@ export default function TopNav({ onAiClick }) {
       {/* Brand */}
       <NavLink to="/" className="topnav-logo">INTLYST</NavLink>
 
-      {/* Center nav links */}
+      {/* Center nav — 6 Hauptbereiche */}
       <div className="topnav-links" role="menubar">
         {NAV_LINKS.map(({ to, label, Icon, end }) => (
           <NavLink
@@ -168,7 +112,6 @@ export default function TopNav({ onAiClick }) {
 
       {/* Right actions */}
       <div className="topnav-actions">
-        {/* Workspace selector */}
         {workspaces.length > 1 && (
           <select
             className="hide-mobile"
@@ -196,31 +139,44 @@ export default function TopNav({ onAiClick }) {
           </select>
         )}
 
-        {/* AI Button */}
+        {/* Search CMD+K */}
         <button
-          className="topnav-ai-btn"
-          onClick={onAiClick}
-          aria-label="KI-Assistent öffnen"
+          className="topnav-search-btn hide-mobile"
+          onClick={onSearchClick}
+          aria-label="Suche öffnen (CMD+K)"
+          title="Suche (⌘K)"
         >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+            <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.3"/>
+            <path d="M9 9l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+          <span>Suche</span>
+          <kbd>⌘K</kbd>
+        </button>
+
+        {/* KI Assistent */}
+        <button className="topnav-ai-btn" onClick={onAiClick} aria-label="KI-Assistent öffnen">
           <span aria-hidden="true" style={{ fontSize: 13 }}>✦</span>
           <span>Fragen</span>
         </button>
 
-        {/* Notification bell */}
+        {/* Notification Center */}
+        <NotificationCenter />
+
+        {/* Settings Icon */}
         <button
           className="topnav-icon-btn"
-          onClick={() => navigate("/alerts")}
-          aria-label={alertCount > 0 ? `${alertCount} ungelesene Alerts` : "Alerts"}
-          title="Alerts"
+          onClick={() => navigate("/settings")}
+          aria-label="Einstellungen"
+          title="Einstellungen"
         >
-          <IcoBellLg />
-          {alertCount > 0 && <span className="notif-badge" aria-hidden="true" />}
+          <IcoGear />
         </button>
 
         {/* Avatar */}
         <button
           className="topnav-avatar"
-          onClick={() => navigate("/settings")}
+          onClick={() => navigate("/settings?tab=account")}
           aria-label="Profileinstellungen"
           title={user?.email ?? "Einstellungen"}
         >
