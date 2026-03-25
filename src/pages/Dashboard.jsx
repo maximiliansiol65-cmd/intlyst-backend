@@ -574,10 +574,11 @@ export default function Dashboard() {
         display: "flex", alignItems: "center",
         justifyContent: "space-between", gap: "var(--s-6)", flexWrap: "wrap",
         borderBottom: "1px solid var(--c-border)",
+        background: "linear-gradient(135deg, var(--c-bg) 60%, var(--c-primary-light) 100%)",
       }}>
         <div>
           <div style={{ fontSize: "var(--text-2xl)", fontWeight: 700, letterSpacing: "-0.3px", color: "var(--c-text)", lineHeight: 1.2 }}>
-            {getGreeting()}, {user?.name || user?.email?.split("@")[0] || "Da"}!
+            {getGreeting()}, {user?.name || user?.email?.split("@")[0] || "Da"}! 👋
           </div>
           <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)", marginTop: "var(--s-1)" }}>
             {formatDateDE(new Date())}
@@ -594,6 +595,13 @@ export default function Dashboard() {
             <HealthRing score={healthScore} size={100} showLabel />
           )}
         </div>
+      </div>
+
+      {/* ── 1b. Getting Started ──────────────────────────────────────────── */}
+      <div style={{ padding: "var(--s-4) var(--s-8) 0" }}>
+        <GettingStartedWidget
+          onOpenChat={() => window.dispatchEvent(new CustomEvent("intlyst:open-chat"))}
+        />
       </div>
 
       {/* ── 2. KPI Strip ─────────────────────────────────────────────────── */}

@@ -1,54 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-
-/**
- * useCounter — animates a number from 0 (or previous) to target in 600ms
- */
-function useCounter(target, duration = 600) {
-  const [display, setDisplay] = useState(0);
-  const rafRef = useRef(null);
-  const startRef = useRef(null);
-  const fromRef = useRef(0);
-
-  useEffect(() => {
-    if (target == null || isNaN(Number(target))) {
-      setDisplay(target);
-      return;
-    }
-    const from = fromRef.current;
-    const to = Number(target);
-    if (from === to) return;
-
-    // Prefer no animation on reduced motion
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setDisplay(to);
-      fromRef.current = to;
-      return;
-    }
-
-    startRef.current = null;
-
-    const animate = (ts) => {
-      if (!startRef.current) startRef.current = ts;
-      const elapsed = ts - startRef.current;
-      const progress = Math.min(elapsed / duration, 1);
-      // ease-out cubic
-      const ease = 1 - Math.pow(1 - progress, 3);
-      const current = from + (to - from) * ease;
-      setDisplay(current);
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(animate);
-      } else {
-        setDisplay(to);
-        fromRef.current = to;
-      }
-    };
-
-    rafRef.current = requestAnimationFrame(animate);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [target, duration]);
-
-  return display;
-}
+import { useState } from "react";
+import { useCountUp } from "../../hooks/useCountUp";
 
 /**
  * KPICard — Enhanced with click-to-expand details
@@ -75,7 +26,11 @@ export function KPICard({
 }) {
   const [showDetails, setShowDetails] = useState(false);
   const numericValue = parseFloat(String(value).replace(/[^0-9.-]/g, ""));
-  const animated = useCounter(animate && !isNaN(numericValue) ? numericValue : null);
+  const animated = useCountUp(
+    animate && !isNaN(numericValue) ? numericValue : 0,
+    600,
+    animate && !isNaN(numericValue)
+  );
 
   const displayValue = (() => {
     if (!animate || isNaN(numericValue)) return value;
