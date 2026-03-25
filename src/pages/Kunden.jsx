@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import StrategyBanner from "../components/StrategyBanner";
 
 // ── Segment configuration ────────────────────────────────────────────────────
 const SEGMENT_CONFIG = {
@@ -638,6 +639,7 @@ export default function Kunden() {
   // ── Render ───────────────────────────────────────────────────────
   return (
     <div className="page-enter">
+      <StrategyBanner />
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       {/* ── Page header ─────────────────────────────────────────── */}

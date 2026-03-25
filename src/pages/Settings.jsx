@@ -1,755 +1,738 @@
-import { useState, useEffect, useCallback } from "react";
+/* eslint-disable */
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
-import { useLanguage } from "../contexts/LanguageContext";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-const TABS = [
-  { key: "konto",              label: "Konto"              },
-  { key: "team",               label: "Team"               },
-  { key: "benachrichtigungen", label: "Benachrichtigungen" },
-  { key: "sprache",            label: "Sprache"            },
-  { key: "abonnement",         label: "Abonnement"         },
+// ── Sidebar Structure ─────────────────────────────────────────────────────────
+const SIDEBAR = [
+  { group: "Profil", items: [
+    { id: "account",     label: "Account",               icon: "👤" },
+    { id: "sicherheit",  label: "Sicherheit & Passwort", icon: "🔐" },
+  ]},
+  { group: "Unternehmen", items: [
+    { id: "strategie",   label: "Strategie & Wachstumsziel", icon: "🎯" },
+    { id: "profil",      label: "Unternehmensprofil",    icon: "🏢" },
+  ]},
+  { group: "Integrationen", items: [
+    { id: "stripe",      label: "Stripe",                icon: "💳" },
+    { id: "ga4",         label: "Google Analytics 4",    icon: "📊" },
+    { id: "shopify",     label: "Shopify",               icon: "🛒" },
+    { id: "woocommerce", label: "WooCommerce",           icon: "🌐" },
+    { id: "hubspot",     label: "HubSpot CRM",           icon: "🔗" },
+    { id: "standort",    label: "Google Maps & Standort",icon: "📍" },
+    { id: "instagram",   label: "Instagram",             icon: "📸" },
+    { id: "tiktok",      label: "TikTok",                icon: "🎵" },
+    { id: "youtube",     label: "YouTube",               icon: "▶️" },
+    { id: "csv",         label: "CSV Import / Export",   icon: "📁" },
+  ]},
+  { group: "Analyse", items: [
+    { id: "benchmark",   label: "Branchenvergleich",     icon: "📈" },
+  ]},
+  { group: "Team", items: [
+    { id: "team",        label: "Mitglieder & Rollen",   icon: "👥" },
+    { id: "berechtigungen", label: "Berechtigungen",     icon: "🛡️" },
+  ]},
+  { group: "Kommunikation", items: [
+    { id: "benachrichtigungen", label: "E-Mail & Alerts",icon: "🔔" },
+  ]},
+  { group: "Abo & Zahlung", items: [
+    { id: "abo",         label: "Plan & Abrechnung",     icon: "💎" },
+    { id: "rechnungen",  label: "Rechnungen",            icon: "🧾" },
+  ]},
+  { group: "System", items: [
+    { id: "backup",      label: "Backup & Sicherheit",   icon: "💾" },
+    { id: "auditlog",    label: "Audit Log",             icon: "📋" },
+  ]},
 ];
 
-const PLAN_META = {
-  trial:         { label: "Trial",         badge: "badge-neutral" },
-  standard:      { label: "Standard",      badge: "badge-info"    },
-  team_standard: { label: "Team Standard", badge: "badge-success" },
-  team_pro:      { label: "Team Pro",      badge: "badge-warning" },
-};
+const GOAL_OPTIONS = [
+  { id: "mehr_kunden",     label: "Mehr Kunden",            icon: "👥" },
+  { id: "mehr_umsatz",     label: "Mehr Umsatz",            icon: "💰" },
+  { id: "mehr_reichweite", label: "Mehr Social Reichweite", icon: "📱" },
+  { id: "mehr_conversion", label: "Höhere Conversion Rate", icon: "🎯" },
+  { id: "kundenbindung",   label: "Kundenbindung stärken",  icon: "❤️" },
+  { id: "marktexpansion",  label: "Neuen Markt erschließen",icon: "🌍" },
+  { id: "automatisierung", label: "Prozesse automatisieren",icon: "⚙️" },
+  { id: "kosten_senken",   label: "Kosten senken",          icon: "📉" },
+];
 
-const INTEGRATION_LABELS = {
-  google_analytics: "Google Analytics 4",
-  shopify:          "Shopify",
-  woocommerce:      "WooCommerce",
-  stripe:           "Stripe",
-  klaviyo:          "Klaviyo",
-  facebook_ads:     "Facebook Ads",
-};
+const PHASE_OPTIONS = [
+  { id: "startup", label: "Startup (0–10k€/Mo)" },
+  { id: "growth",  label: "Growth (10–100k€/Mo)" },
+  { id: "scale",   label: "Scale (100k€+/Mo)" },
+];
 
-// ── Sub-pages ─────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function Section({ title, children, action }) {
+  return (
+    <div style={{ marginBottom: "var(--s-8)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--s-4)" }}>
+        <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--c-text)" }}>{title}</h2>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
 
-function KontoTab({ user, authHeader, logout }) {
+function Field({ label, children, hint }) {
+  return (
+    <div style={{ marginBottom: "var(--s-5)" }}>
+      <label className="form-label">{label}</label>
+      {children}
+      {hint && <div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)", marginTop: 4 }}>{hint}</div>}
+    </div>
+  );
+}
+
+function Toggle({ value, onChange, label }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--s-4) 0", borderBottom: "1px solid var(--c-border)" }}>
+      <span style={{ fontSize: "var(--text-sm)", color: "var(--c-text)" }}>{label}</span>
+      <button
+        onClick={() => onChange(!value)}
+        style={{
+          width: 44, height: 26, borderRadius: 13, padding: 3,
+          background: value ? "var(--c-primary)" : "var(--c-surface-3)",
+          border: "1px solid var(--c-border-2)", cursor: "pointer", transition: "background 0.2s",
+          display: "flex", alignItems: "center", flexShrink: 0,
+        }}
+      >
+        <div style={{
+          width: 18, height: 18, borderRadius: "50%", background: "#fff",
+          transform: value ? "translateX(18px)" : "translateX(0)",
+          transition: "transform 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+        }} />
+      </button>
+    </div>
+  );
+}
+
+// ── Tab Components ────────────────────────────────────────────────────────────
+function TabAccount() {
+  const { user, authHeader } = useAuth();
   const toast = useToast();
-  const { t } = useLanguage();
-  const [name, setName] = useState(user?.name ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
+  const [name, setName] = useState(user?.name || "");
+  const [company, setCompany] = useState(user?.company || "");
   const [saving, setSaving] = useState(false);
 
-  const [oldPw, setOldPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [pwSaving, setPwSaving] = useState(false);
-
-  const [showDelete, setShowDelete] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState("");
-
-  async function saveProfile() {
+  async function save() {
     setSaving(true);
     try {
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
+      const res = await fetch("/api/auth/profile", {
+        method: "PUT",
         headers: { "Content-Type": "application/json", ...authHeader() },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name: name.trim(), company: company.trim() }),
       });
       if (!res.ok) throw new Error();
-      toast.success(t('profileSaved'));
-    } catch {
-      toast.error("Speichern fehlgeschlagen.");
-    } finally {
-      setSaving(false);
-    }
+      toast.success("Profil gespeichert.");
+    } catch { toast.error("Fehler beim Speichern."); }
+    finally { setSaving(false); }
   }
 
+  return (
+    <Section title="Account">
+      <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+        <Field label="Name">
+          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Dein Name" />
+        </Field>
+        <Field label="E-Mail">
+          <input className="input" value={user?.email || ""} disabled style={{ opacity: 0.6 }} />
+        </Field>
+        <Field label="Unternehmen">
+          <input className="input" value={company} onChange={e => setCompany(e.target.value)} placeholder="Firmenname" />
+        </Field>
+        <button className="btn btn-primary btn-md" onClick={save} disabled={saving}>
+          {saving ? "Speichern…" : "Speichern"}
+        </button>
+      </div>
+    </Section>
+  );
+}
+
+function TabSicherheit() {
+  const { authHeader, logout } = useAuth();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [cur, setCur] = useState("");
+  const [next, setNext] = useState("");
+  const [saving, setSaving] = useState(false);
+
   async function changePassword() {
-    if (newPw !== confirmPw) { toast.error("Passwörter stimmen nicht überein."); return; }
-    if (newPw.length < 8) { toast.error("Mindestens 8 Zeichen."); return; }
-    setPwSaving(true);
+    if (!cur || !next) return toast.warning("Bitte beide Felder ausfüllen.");
+    if (next.length < 10) return toast.warning("Mindestens 10 Zeichen erforderlich.");
+    setSaving(true);
     try {
       const res = await fetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeader() },
-        body: JSON.stringify({ old_password: oldPw, new_password: newPw }),
+        body: JSON.stringify({ current_password: cur, new_password: next }),
       });
-      if (!res.ok) throw new Error();
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.detail || "Fehler");
       toast.success("Passwort geändert.");
-      setOldPw(""); setNewPw(""); setConfirmPw("");
-    } catch {
-      toast.error("Passwortänderung fehlgeschlagen.");
-    } finally {
-      setPwSaving(false);
-    }
+      setCur(""); setNext("");
+    } catch (e) { toast.error(e.message || "Fehler."); }
+    finally { setSaving(false); }
+  }
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login");
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-5)" }}>
-
-      {/* Profile */}
-      <div className="card" style={{ padding: "var(--s-6)" }}>
-        <div className="section-title" style={{ marginBottom: "var(--s-5)" }}>Profil</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-4)" }}>
-          <div className="form-group">
-            <label className="form-label">Name</label>
-            <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Dein Name" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">E-Mail</label>
-            <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@beispiel.de" />
-          </div>
-          <button className="btn btn-primary btn-md" onClick={saveProfile} disabled={saving} style={{ alignSelf: "flex-start" }}>
-            {saving ? "Speichern…" : "Speichern"}
+    <div>
+      <Section title="Passwort ändern">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 480 }}>
+          <Field label="Aktuelles Passwort">
+            <input className="input" type="password" value={cur} onChange={e => setCur(e.target.value)} />
+          </Field>
+          <Field label="Neues Passwort" hint="Mindestens 10 Zeichen, Groß- und Kleinbuchstaben + Zahl">
+            <input className="input" type="password" value={next} onChange={e => setNext(e.target.value)} />
+          </Field>
+          <button className="btn btn-primary btn-md" onClick={changePassword} disabled={saving}>
+            {saving ? "Speichern…" : "Passwort ändern"}
           </button>
         </div>
-      </div>
-
-      {/* Password */}
-      <div className="card" style={{ padding: "var(--s-6)" }}>
-        <div className="section-title" style={{ marginBottom: "var(--s-5)" }}>Passwort ändern</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-4)" }}>
-          <div className="form-group">
-            <label className="form-label">Aktuelles Passwort</label>
-            <input className="input" type="password" value={oldPw} onChange={(e) => setOldPw(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Neues Passwort</label>
-            <input className="input" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Passwort bestätigen</label>
-            <input className="input" type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
-          </div>
-          <button className="btn btn-primary btn-md" onClick={changePassword} disabled={pwSaving || !oldPw || !newPw || !confirmPw} style={{ alignSelf: "flex-start" }}>
-            {pwSaving ? "Ändern…" : "Passwort ändern"}
-          </button>
+      </Section>
+      <Section title="Sitzung beenden">
+        <div className="card" style={{ padding: "var(--s-5)", maxWidth: 480 }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--c-text-2)", marginBottom: "var(--s-4)" }}>
+            Beende deine aktuelle Sitzung auf diesem Gerät.
+          </p>
+          <button className="btn btn-danger btn-md" onClick={handleLogout}>Abmelden</button>
         </div>
-      </div>
-
-      {/* Logout */}
-      <div className="card" style={{ padding: "var(--s-6)" }}>
-        <div className="section-title" style={{ marginBottom: "var(--s-2)" }}>Abmelden</div>
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)", marginBottom: "var(--s-4)" }}>
-          Du wirst abgemeldet, dein Konto bleibt erhalten.
-        </p>
-        <button className="btn btn-secondary btn-sm" onClick={logout}>Abmelden</button>
-      </div>
-
-      {/* Danger zone */}
-      <div className="card" style={{ padding: "var(--s-6)", borderLeft: "3px solid var(--c-danger)" }}>
-        <div className="section-title" style={{ marginBottom: "var(--s-2)", color: "var(--c-danger)" }}>Gefahrenzone</div>
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)", marginBottom: "var(--s-4)" }}>
-          Das Löschen deines Kontos ist permanent und kann nicht rückgängig gemacht werden.
-        </p>
-        {!showDelete ? (
-          <button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>Konto löschen</button>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-3)" }}>
-            <p style={{ fontSize: "var(--text-sm)", color: "var(--c-danger)" }}>
-              Gib <strong>LÖSCHEN</strong> ein um zu bestätigen:
-            </p>
-            <input className="input" value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder="LÖSCHEN" />
-            <div className="flex gap-3">
-              <button className="btn btn-secondary btn-sm" onClick={() => { setShowDelete(false); setDeleteConfirm(""); }}>Abbrechen</button>
-              <button className="btn btn-danger btn-sm" disabled={deleteConfirm !== "LÖSCHEN"}>Endgültig löschen</button>
-            </div>
-          </div>
-        )}
-      </div>
+      </Section>
     </div>
   );
 }
 
-function TeamTab({ authHeader }) {
+function TabStrategie() {
+  const { authHeader, user } = useAuth();
   const toast = useToast();
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviting, setInviting] = useState(false);
-  const [removingId, setRemovingId] = useState(null);
-
-  const fetchMembers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/team/members", { headers: authHeader() });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setMembers(Array.isArray(data) ? data : data.members ?? []);
-    } catch {
-      toast.error("Team konnte nicht geladen werden.");
-    } finally {
-      setLoading(false);
-    }
-  }, [authHeader, toast]);
-
-  useEffect(() => { fetchMembers(); }, [fetchMembers]);
-
-  async function inviteMember() {
-    if (!inviteEmail) return;
-    setInviting(true);
-    try {
-      const res = await fetch("/api/team/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader() },
-        body: JSON.stringify({ email: inviteEmail }),
-      });
-      if (!res.ok) throw new Error();
-      toast.success(`Einladung an ${inviteEmail} gesendet.`);
-      setInviteEmail("");
-      fetchMembers();
-    } catch {
-      toast.error("Einladung fehlgeschlagen.");
-    } finally {
-      setInviting(false);
-    }
-  }
-
-  async function removeMember(id) {
-    setRemovingId(id);
-    try {
-      const res = await fetch(`/api/team/members/${id}`, { method: "DELETE", headers: authHeader() });
-      if (!res.ok) throw new Error();
-      toast.success("Mitglied entfernt.");
-      setMembers((prev) => prev.filter((m) => m.id !== id));
-    } catch {
-      toast.error("Entfernen fehlgeschlagen.");
-    } finally {
-      setRemovingId(null);
-    }
-  }
-
-  const ROLE_LABELS = { admin: "Admin", member: "Mitglied", owner: "Inhaber" };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-5)" }}>
-      <div className="card" style={{ padding: "var(--s-6)" }}>
-        <div className="section-title" style={{ marginBottom: "var(--s-4)" }}>Mitglied einladen</div>
-        <div className="flex gap-3">
-          <input
-            className="input" type="email" value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && inviteMember()}
-            placeholder="name@beispiel.de" style={{ flex: 1 }}
-          />
-          <button className="btn btn-primary btn-md" onClick={inviteMember} disabled={!inviteEmail || inviting}>
-            {inviting ? "Sende…" : "Einladen"}
-          </button>
-        </div>
-      </div>
-
-      <div className="card" style={{ padding: "var(--s-6)" }}>
-        <div className="section-title" style={{ marginBottom: "var(--s-4)" }}>Teammitglieder</div>
-        {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-3)" }}>
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="skeleton" style={{ width: 36, height: 36, borderRadius: "50%" }} />
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "var(--s-1)" }}>
-                  <div className="skeleton skeleton-text" style={{ width: "40%" }} />
-                  <div className="skeleton skeleton-text" style={{ width: "60%" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : members.length === 0 ? (
-          <div className="empty-state" style={{ padding: "var(--s-8) 0" }}>
-            <div className="empty-icon">👥</div>
-            <div className="empty-title">Noch keine Mitglieder</div>
-            <div className="empty-text">Lade dein Team ein um zusammenzuarbeiten.</div>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {members.map((m, idx) => (
-              <div key={m.id ?? idx}>
-                {idx > 0 && <div className="divider" />}
-                <div className="flex items-center gap-3" style={{ padding: "var(--s-3) 0" }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: "50%",
-                    background: "var(--c-primary-light)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "var(--text-md)", fontWeight: 600, color: "var(--c-primary)", flexShrink: 0,
-                  }}>
-                    {(m.name ?? m.email ?? "?")[0].toUpperCase()}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--c-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {m.name ?? m.email}
-                    </div>
-                    {m.name && (
-                      <div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }}>{m.email}</div>
-                    )}
-                  </div>
-                  <span className="badge badge-sm badge-neutral">{ROLE_LABELS[m.role] ?? m.role ?? "Mitglied"}</span>
-                  {m.role !== "owner" && (
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      style={{ color: "var(--c-danger)", padding: "4px 8px" }}
-                      disabled={removingId === m.id}
-                      onClick={() => removeMember(m.id)}
-                    >
-                      {removingId === m.id ? "…" : "Entfernen"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function DatenquellenTab({ authHeader }) {
-  const toast = useToast();
-  const [connections, setConnections] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [togglingId, setTogglingId] = useState(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/connections", { headers: authHeader() });
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        setConnections(Array.isArray(data) ? data : data.connections ?? []);
-      } catch {
-        toast.error("Datenquellen konnten nicht geladen werden.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [authHeader, toast]);
-
-  async function toggleConnection(id, enabled) {
-    setTogglingId(id);
-    try {
-      const res = await fetch(`/api/connections/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...authHeader() },
-        body: JSON.stringify({ enabled: !enabled }),
-      });
-      if (!res.ok) throw new Error();
-      setConnections((prev) => prev.map((c) => (c.id === id ? { ...c, enabled: !enabled } : c)));
-      toast.success(!enabled ? "Verbindung aktiviert." : "Verbindung deaktiviert.");
-    } catch {
-      toast.error("Änderung fehlgeschlagen.");
-    } finally {
-      setTogglingId(null);
-    }
-  }
-
-  const STATUS_BADGE = {
-    connected:    { label: "Verbunden",  cls: "badge-success" },
-    disconnected: { label: "Getrennt",   cls: "badge-neutral" },
-    error:        { label: "Fehler",     cls: "badge-danger"  },
-    pending:      { label: "Ausstehend", cls: "badge-warning" },
-  };
-
-  const ICONS = {
-    google_analytics: "📊", shopify: "🛍️", woocommerce: "🛒",
-    stripe: "💳", klaviyo: "📧", facebook_ads: "📣",
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-5)" }}>
-      <div className="card" style={{ padding: "var(--s-6)" }}>
-        <div className="section-title" style={{ marginBottom: "var(--s-4)" }}>Verbundene Quellen</div>
-        {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-4)" }}>
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="skeleton" style={{ width: 40, height: 40, borderRadius: "var(--r-md)" }} />
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "var(--s-1)" }}>
-                  <div className="skeleton skeleton-text" style={{ width: "30%" }} />
-                  <div className="skeleton skeleton-text" style={{ width: "50%" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : connections.length === 0 ? (
-          <div className="empty-state" style={{ padding: "var(--s-8) 0" }}>
-            <div className="empty-icon">🔌</div>
-            <div className="empty-title">Keine Datenquellen</div>
-            <div className="empty-text">Verbinde eine Datenquelle um mit der Analyse zu starten.</div>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {connections.map((c, idx) => {
-              const meta = STATUS_BADGE[c.status] ?? { label: c.status ?? "Unbekannt", cls: "badge-neutral" };
-              return (
-                <div key={c.id ?? idx}>
-                  {idx > 0 && <div className="divider" />}
-                  <div className="flex items-center gap-3" style={{ padding: "var(--s-4) 0" }}>
-                    <div style={{
-                      width: 40, height: 40, borderRadius: "var(--r-md)",
-                      background: "var(--c-surface-2)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 20, flexShrink: 0,
-                    }}>
-                      {ICONS[c.type] ?? "🔗"}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--c-text)" }}>
-                        {INTEGRATION_LABELS[c.type] ?? c.name ?? c.type ?? "Integration"}
-                      </div>
-                      {c.account && (
-                        <div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {c.account}
-                        </div>
-                      )}
-                    </div>
-                    <span className={`badge badge-sm ${meta.cls}`}>{meta.label}</span>
-                    <label className="toggle" title={c.enabled ? "Deaktivieren" : "Aktivieren"}>
-                      <input type="checkbox" checked={!!c.enabled} onChange={() => toggleConnection(c.id, c.enabled)} disabled={togglingId === c.id} />
-                      <span className="toggle-track"><span className="toggle-thumb" /></span>
-                    </label>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="card" style={{ padding: "var(--s-5)", borderLeft: "3px solid var(--c-primary)" }}>
-        <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--c-primary)", marginBottom: "var(--s-2)" }}>
-          Neue Integration hinzufügen
-        </div>
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--c-text-2)", lineHeight: 1.65 }}>
-          Weitere Integrationen können über den INTLYST Partner-Connector eingerichtet werden.
-          Kontaktiere <span style={{ color: "var(--c-primary)" }}>support@intlyst.com</span> für individuelle Anbindungen.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function BenachrichtigungenTab({ authHeader }) {
-  const toast = useToast();
-  const [prefs, setPrefs] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [goalId, setGoalId] = useState("");
+  const [industry, setIndustry] = useState(user?.industry || "");
+  const [phase, setPhase] = useState("growth");
+  const [igHandle, setIgHandle] = useState("");
+  const [ttHandle, setTtHandle] = useState("");
+  const [ytHandle, setYtHandle] = useState("");
+  const [autoUpdate, setAutoUpdate] = useState("daily");
+  const [briefingEmail, setBriefingEmail] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const EMAIL_ITEMS = [
-    { key: "alerts",          label: "Kritische Alerts",          sub: "Sofort bei neuen kritischen Ereignissen" },
-    { key: "goals",           label: "Ziel-Fortschritt",          sub: "Wenn Ziele erreicht oder gefährdet sind" },
-    { key: "recommendations", label: "Empfehlungen",              sub: "Neue KI-Handlungsempfehlungen" },
-    { key: "anomalies",       label: "Anomalie-Erkennung",        sub: "Ungewöhnliche Datenmuster" },
-    { key: "weekly_summary",  label: "Wöchentliche Zusammenfassung", sub: "Jeden Montag um 07:00 Uhr" },
-    { key: "reports",         label: "Tägliche Reports",          sub: "Täglich um 07:00 Uhr" },
-  ];
-
   useEffect(() => {
-    fetch("/api/email-preferences", { headers: authHeader() })
-      .then(r => r.json())
-      .then(data => setPrefs(data))
-      .catch(() => setPrefs({ enabled: true, alerts: true, goals: true, recommendations: true, anomalies: true, weekly_summary: true, reports: false }))
-      .finally(() => setLoading(false));
-  }, []);
+    fetch("/api/growth/profile", { headers: authHeader() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return;
+        setGoalId(d.growth_goal || "");
+        setIndustry(d.industry || user?.industry || "");
+        setPhase(d.phase || "growth");
+        setIgHandle(d.instagram_handle || "");
+        setTtHandle(d.tiktok_handle || "");
+        setYtHandle(d.youtube_handle || "");
+        setAutoUpdate(d.auto_update || "daily");
+        setBriefingEmail(d.briefing_email !== false);
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line
 
-  async function savePrefs() {
+  async function save() {
     setSaving(true);
     try {
-      const res = await fetch("/api/email-preferences", {
-        method: "PATCH",
+      const res = await fetch("/api/growth/profile", {
+        method: "POST",
         headers: { "Content-Type": "application/json", ...authHeader() },
-        body: JSON.stringify(prefs),
+        body: JSON.stringify({
+          growth_goal: goalId,
+          growth_goal_label: GOAL_OPTIONS.find(g => g.id === goalId)?.label || goalId,
+          industry, phase,
+          instagram_handle: igHandle, tiktok_handle: ttHandle, youtube_handle: ytHandle,
+          auto_update: autoUpdate, briefing_email: briefingEmail,
+        }),
       });
       if (!res.ok) throw new Error();
-      toast.success("E-Mail-Einstellungen gespeichert.");
-    } catch {
-      toast.error("Speichern fehlgeschlagen.");
-    } finally {
-      setSaving(false);
-    }
+      toast.success("Strategie gespeichert! Alle Seiten werden aktualisiert.");
+    } catch { toast.error("Fehler beim Speichern."); }
+    finally { setSaving(false); }
   }
 
-  function toggle(key) {
-    setPrefs(p => ({ ...p, [key]: !p[key] }));
-  }
-
-  if (loading || !prefs) {
-    return <div className="card" style={{ padding: "var(--s-6)", color: "var(--c-text-3)", fontSize: "var(--text-sm)" }}>Wird geladen…</div>;
-  }
+  const selected = GOAL_OPTIONS.find(g => g.id === goalId);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-5)" }}>
-
-      {/* Master switch */}
-      <div className="card" style={{ padding: "var(--s-6)" }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <div style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--c-text)" }}>E-Mail-Benachrichtigungen</div>
-            <div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)", marginTop: "var(--s-1)" }}>
-              Alle E-Mail-Benachrichtigungen aktivieren oder deaktivieren
-            </div>
+    <div>
+      {selected && (
+        <div className="card" style={{ padding: "var(--s-6)", marginBottom: "var(--s-6)", background: "linear-gradient(135deg, var(--c-primary-light), transparent)", borderLeft: "3px solid var(--c-primary)" }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>{selected.icon}</div>
+          <div style={{ fontSize: "var(--text-xl)", fontWeight: 700 }}>{selected.label}</div>
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)", marginTop: 4 }}>
+            Alle Analysen und KI-Empfehlungen sind auf dieses Ziel ausgerichtet.
           </div>
-          <label className="toggle">
-            <input type="checkbox" checked={!!prefs.enabled} onChange={() => toggle("enabled")} />
-            <span className="toggle-track"><span className="toggle-thumb" /></span>
-          </label>
         </div>
-      </div>
+      )}
 
-      {/* Per-type settings */}
-      <div className="card" style={{ padding: "var(--s-6)", opacity: prefs.enabled ? 1 : 0.45, transition: "opacity 0.2s ease", pointerEvents: prefs.enabled ? "auto" : "none" }}>
-        <div className="section-title" style={{ marginBottom: "var(--s-4)" }}>Benachrichtigungsarten</div>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {EMAIL_ITEMS.map((item, idx) => (
-            <div key={item.key}>
-              {idx > 0 && <div className="divider" />}
-              <div className="flex items-center justify-between" style={{ padding: "var(--s-3) 0" }}>
-                <div>
-                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--c-text)" }}>{item.label}</div>
-                  <div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)", marginTop: "var(--s-1)" }}>{item.sub}</div>
-                </div>
-                <label className="toggle">
-                  <input type="checkbox" checked={!!prefs[item.key]} onChange={() => toggle(item.key)} />
-                  <span className="toggle-track"><span className="toggle-thumb" /></span>
-                </label>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: "var(--s-3)", alignItems: "center" }}>
-        <button className="btn btn-primary btn-md" onClick={savePrefs} disabled={saving}>
-          {saving ? "Speichern…" : "Einstellungen speichern"}
-        </button>
-        <span style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }}>
-          E-Mails werden an deine Konto-E-Mail-Adresse gesendet.
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function SpracheTab() {
-  const { language, setLanguage, t } = useLanguage();
-
-  const languages = [
-    { code: 'de', name: 'Deutsch',    flag: '🇩🇪' },
-    { code: 'en', name: 'English',    flag: '🇬🇧' },
-    { code: 'es', name: 'Español',    flag: '🇪🇸' },
-    { code: 'fr', name: 'Français',   flag: '🇫🇷' },
-    { code: 'it', name: 'Italiano',   flag: '🇮🇹' },
-    { code: 'pt', name: 'Português',  flag: '🇵🇹' },
-    { code: 'zh', name: '中文',        flag: '🇨🇳' },
-    { code: 'ru', name: 'Русский',    flag: '🇷🇺' },
-  ];
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-5)" }}>
-      <div>
-        <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 600, marginBottom: "var(--s-2)", color: "var(--c-text)" }}>
-          Sprache wählen
-        </h3>
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)", marginBottom: "var(--s-4)" }}>
-          Wähle deine bevorzugte Sprache für die Benutzeroberfläche.
-        </p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "var(--s-3)" }}>
-          {languages.map(lang => (
-            <button
-              key={lang.code}
-              onClick={() => setLanguage(lang.code)}
-              style={{
-                padding: "var(--s-3) var(--s-4)",
-                border: language === lang.code ? "2px solid #000" : "1px solid var(--c-border)",
-                borderRadius: "var(--r-md)",
-                background: language === lang.code ? "#f5f5f5" : "var(--c-surface)",
-                cursor: "pointer",
-                transition: "all 0.2s",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "var(--s-2)",
-              }}
-            >
-              <span style={{ fontSize: "32px" }}>{lang.flag}</span>
-              <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--c-text)" }}>
-                {lang.name}
+      <Section title="Wachstumsziel wählen">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))", gap: "var(--s-3)" }}>
+          {GOAL_OPTIONS.map(g => (
+            <button key={g.id} onClick={() => setGoalId(g.id)} style={{
+              display: "flex", flexDirection: "column", alignItems: "flex-start",
+              padding: "var(--s-4)", borderRadius: "var(--r-md)", cursor: "pointer", textAlign: "left",
+              border: goalId === g.id ? "2px solid var(--c-primary)" : "1px solid var(--c-border-2)",
+              background: goalId === g.id ? "var(--c-primary-light)" : "var(--c-surface)",
+              transition: "all 0.15s",
+            }}>
+              <span style={{ fontSize: 24, marginBottom: 8 }}>{g.icon}</span>
+              <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: goalId === g.id ? "var(--c-primary)" : "var(--c-text)" }}>
+                {g.label}
               </span>
-              {language === lang.code && (
-                <span style={{ fontSize: "12px", color: "#000", fontWeight: 700 }}>✓ Aktiv</span>
-              )}
             </button>
           ))}
         </div>
-      </div>
+      </Section>
 
-      <div style={{ paddingTop: "var(--s-3)", borderTop: "1px solid var(--c-border)" }}>
-        <h4 style={{ fontSize: "var(--text-sm)", fontWeight: 600, marginBottom: "var(--s-2)", color: "var(--c-text)" }}>
-          Sprachpräferenzen
-        </h4>
-        <p style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }}>
-          Deine Spracheinstellung wird automatisch gespeichert und beim nächsten Login wiederhergestellt.
-        </p>
-      </div>
+      <Section title="Unternehmen & Phase">
+        <div className="card" style={{ padding: "var(--s-6)" }}>
+          <Field label="Branche">
+            <select className="select" value={industry} onChange={e => setIndustry(e.target.value)}>
+              <option value="">Branche wählen…</option>
+              {["E-Commerce","SaaS / Software","Gastronomie","Dienstleistung","Einzelhandel","Gesundheit & Beauty","Immobilien","Coaching / Beratung","Andere"].map(b => (
+                <option key={b} value={b.toLowerCase().replace(/[^a-z]/g,"")}>{b}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Wachstumsphase">
+            <div className="tabs-pill">
+              {PHASE_OPTIONS.map(p => (
+                <button key={p.id} className={`tab-pill${phase === p.id ? " active" : ""}`} onClick={() => setPhase(p.id)}>{p.label}</button>
+              ))}
+            </div>
+          </Field>
+        </div>
+      </Section>
+
+      <Section title="Social Media Handles">
+        <div className="card" style={{ padding: "var(--s-6)" }}>
+          <Field label="Instagram"><input className="input" value={igHandle} onChange={e => setIgHandle(e.target.value)} placeholder="@deinname" /></Field>
+          <Field label="TikTok"><input className="input" value={ttHandle} onChange={e => setTtHandle(e.target.value)} placeholder="@deinname" /></Field>
+          <Field label="YouTube"><input className="input" value={ytHandle} onChange={e => setYtHandle(e.target.value)} placeholder="@deinkanal" /></Field>
+        </div>
+      </Section>
+
+      <Section title="Automatisierung">
+        <div className="card" style={{ padding: "var(--s-5) var(--s-6)" }}>
+          <Toggle value={briefingEmail} onChange={setBriefingEmail} label="Daily Briefing per E-Mail (07:00)" />
+          <div style={{ paddingTop: "var(--s-4)" }}>
+            <Field label="KI-Empfehlungen aktualisieren">
+              <div className="tabs-pill">
+                {[{ id: "daily", label: "Täglich" }, { id: "weekly", label: "Wöchentlich" }].map(opt => (
+                  <button key={opt.id} className={`tab-pill${autoUpdate === opt.id ? " active" : ""}`} onClick={() => setAutoUpdate(opt.id)}>{opt.label}</button>
+                ))}
+              </div>
+            </Field>
+          </div>
+        </div>
+      </Section>
+
+      <button className="btn btn-primary btn-lg" onClick={save} disabled={!goalId || saving} style={{ minWidth: 200 }}>
+        {saving ? "Speichern…" : "Strategie speichern"}
+      </button>
     </div>
   );
 }
 
-function AbonnementTab({ authHeader }) {
-  const [workspace, setWorkspace] = useState(null);
+function TabIntegrations({ subtab }) {
+  const { authHeader } = useAuth();
+  const toast = useToast();
+  const [saving, setSaving] = useState(false);
+  const [fields, setFields] = useState({});
+
+  function f(key) { return fields[key] || ""; }
+  function setF(key, val) { setFields(s => ({ ...s, [key]: val })); }
+
+  async function connect(provider, data) {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/user-integrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ provider, ...data }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${provider} verbunden!`);
+    } catch { toast.error("Verbindung fehlgeschlagen."); }
+    finally { setSaving(false); }
+  }
+
+  const map = {
+    stripe: (
+      <Section title="Stripe verbinden">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+          <Field label="Stripe Secret Key" hint="sk_live_ oder sk_test_ — aus deinem Stripe Dashboard">
+            <input className="input" type="password" value={f("stripe_key")} onChange={e => setF("stripe_key", e.target.value)} placeholder="sk_live_..." />
+          </Field>
+          <button className="btn btn-primary btn-md" onClick={() => connect("stripe", { api_key: f("stripe_key") })} disabled={saving || !f("stripe_key")}>
+            {saving ? "Verbinde…" : "Verbinden"}
+          </button>
+        </div>
+      </Section>
+    ),
+    ga4: (
+      <Section title="Google Analytics 4">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+          <Field label="GA4 Measurement ID" hint="Sieht aus wie G-XXXXXXXXXX">
+            <input className="input" value={f("ga4_id")} onChange={e => setF("ga4_id", e.target.value)} placeholder="G-XXXXXXXXXX" />
+          </Field>
+          <button className="btn btn-primary btn-md" onClick={() => connect("ga4", { measurement_id: f("ga4_id") })} disabled={saving || !f("ga4_id")}>
+            {saving ? "Verbinde…" : "Verbinden"}
+          </button>
+        </div>
+      </Section>
+    ),
+    shopify: (
+      <Section title="Shopify verbinden">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+          <Field label="Shopify Shop URL" hint="z.B. mein-shop.myshopify.com">
+            <input className="input" value={f("shopify_url")} onChange={e => setF("shopify_url", e.target.value)} placeholder="mein-shop.myshopify.com" />
+          </Field>
+          <button className="btn btn-primary btn-md" onClick={() => connect("shopify", { shop_url: f("shopify_url") })} disabled={saving || !f("shopify_url")}>
+            {saving ? "Verbinde…" : "Verbinden"}
+          </button>
+        </div>
+      </Section>
+    ),
+    woocommerce: (
+      <Section title="WooCommerce verbinden">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+          <Field label="Shop URL"><input className="input" value={f("wc_url")} onChange={e => setF("wc_url", e.target.value)} placeholder="https://deinshop.de" /></Field>
+          <Field label="Consumer Key"><input className="input" value={f("wc_ck")} onChange={e => setF("wc_ck", e.target.value)} placeholder="ck_..." /></Field>
+          <Field label="Consumer Secret"><input className="input" type="password" value={f("wc_cs")} onChange={e => setF("wc_cs", e.target.value)} placeholder="cs_..." /></Field>
+          <button className="btn btn-primary btn-md" onClick={() => connect("woocommerce", { url: f("wc_url"), consumer_key: f("wc_ck"), consumer_secret: f("wc_cs") })} disabled={saving}>Verbinden</button>
+        </div>
+      </Section>
+    ),
+    hubspot: (
+      <Section title="HubSpot CRM">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+          <Field label="HubSpot API Key"><input className="input" type="password" value={f("hs_key")} onChange={e => setF("hs_key", e.target.value)} placeholder="pat-eu1-..." /></Field>
+          <button className="btn btn-primary btn-md" onClick={() => connect("hubspot", { api_key: f("hs_key") })} disabled={saving || !f("hs_key")}>Verbinden</button>
+        </div>
+      </Section>
+    ),
+    standort: (
+      <Section title="Google Maps & Standortanalyse">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+          <Field label="Google Maps API Key"><input className="input" type="password" value={f("maps_key")} onChange={e => setF("maps_key", e.target.value)} placeholder="AIzaSy..." /></Field>
+          <Field label="Unternehmensadresse"><input className="input" value={f("address")} onChange={e => setF("address", e.target.value)} placeholder="Hauptstr. 1, 10115 Berlin" /></Field>
+          <Field label={`Radius: ${f("radius") || 5} km`}>
+            <input type="range" min="1" max="20" value={f("radius") || 5} onChange={e => setF("radius", e.target.value)} style={{ width: "100%" }} />
+          </Field>
+          <button className="btn btn-primary btn-md" onClick={() => connect("google_maps", { api_key: f("maps_key"), address: f("address"), radius: Number(f("radius") || 5) })} disabled={saving || !f("maps_key") || !f("address")}>
+            {saving ? "Analysiere…" : "Analyse starten"}
+          </button>
+        </div>
+      </Section>
+    ),
+    instagram: (
+      <Section title="Instagram verbinden">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--c-text-2)", marginBottom: "var(--s-4)" }}>Verbinde dein Instagram Business Konto über Meta Business Suite.</p>
+          <button className="btn btn-primary btn-md" onClick={() => toast.info("Instagram OAuth — kommt bald.")}>Mit Instagram verbinden</button>
+        </div>
+      </Section>
+    ),
+    tiktok: (
+      <Section title="TikTok verbinden">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+          <button className="btn btn-primary btn-md" onClick={() => toast.info("TikTok OAuth — kommt bald.")}>Mit TikTok verbinden</button>
+        </div>
+      </Section>
+    ),
+    youtube: (
+      <Section title="YouTube verbinden">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+          <button className="btn btn-primary btn-md" onClick={() => toast.info("YouTube OAuth — kommt bald.")}>Mit YouTube verbinden</button>
+        </div>
+      </Section>
+    ),
+    csv: (
+      <Section title="CSV Import / Export">
+        <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--c-text-2)", marginBottom: "var(--s-4)" }}>Lade Umsatz-, Kunden- oder Traffic-Daten als CSV hoch.</p>
+          <input type="file" accept=".csv" className="input" style={{ padding: "var(--s-2)" }} />
+          <button className="btn btn-primary btn-md" style={{ marginTop: "var(--s-4)" }}>Import starten</button>
+          <div style={{ marginTop: "var(--s-5)", paddingTop: "var(--s-4)", borderTop: "1px solid var(--c-border)" }}>
+            <button className="btn btn-secondary btn-md">Alle Daten exportieren (CSV)</button>
+          </div>
+        </div>
+      </Section>
+    ),
+  };
+
+  return map[subtab] || <div className="empty-state"><div className="empty-icon">🚧</div><div className="empty-title">Kommt bald</div></div>;
+}
+
+function TabBenchmark() {
+  const { authHeader } = useAuth();
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/workspace", { headers: authHeader() });
-        if (!res.ok) throw new Error();
-        setWorkspace(await res.json());
-      } catch {
-        setWorkspace(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [authHeader]);
+    fetch("/api/benchmark", { headers: authHeader() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []); // eslint-disable-line
 
-  const plan = workspace?.plan ?? "trial";
-  const planMeta = PLAN_META[plan] ?? { label: plan, badge: "badge-neutral" };
+  if (loading) return <div className="skeleton" style={{ height: 200, borderRadius: "var(--r-md)" }} />;
 
-  const PLANS = [
-    {
-      key: "standard",
-      label: "Standard",
-      price: "29 €", per: "/ Monat",
-      features: ["1 Workspace", "5 Datenquellen", "KI-Analyse", "90 Tage Verlauf"],
-    },
-    {
-      key: "team_standard",
-      label: "Team Standard",
-      price: "79 €", per: "/ Monat",
-      features: ["3 Workspaces", "15 Datenquellen", "Team-Features", "1 Jahr Verlauf"],
-      highlighted: true,
-    },
-    {
-      key: "team_pro",
-      label: "Team Pro",
-      price: "199 €", per: "/ Monat",
-      features: ["Unbegrenzte Workspaces", "Alle Integrationen", "Priorität-Support", "Unbegrenzter Verlauf"],
-    },
+  const metrics = [
+    { key: "revenue", label: "Umsatz" },
+    { key: "conversion_rate", label: "Conversion Rate" },
+    { key: "new_customers", label: "Neue Kunden" },
+    { key: "traffic", label: "Traffic" },
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-5)" }}>
-      <div className="card" style={{ padding: "var(--s-6)" }}>
-        <div className="section-title" style={{ marginBottom: "var(--s-4)" }}>Aktueller Plan</div>
-        {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-3)" }}>
-            <div className="skeleton skeleton-text" style={{ width: "30%" }} />
-            <div className="skeleton skeleton-text" style={{ width: "50%" }} />
-          </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <span className={`badge badge-sm ${planMeta.badge}`}>{planMeta.label}</span>
-            <span style={{ fontSize: "var(--text-sm)", color: "var(--c-text-2)" }}>{workspace?.name ?? "Mein Workspace"}</span>
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--s-4)" }}>
-        {PLANS.map((p) => {
-          const isCurrent = plan === p.key;
-          return (
-            <div
-              key={p.key}
-              className="card"
-              style={{
-                padding: "var(--s-5)",
-                ...(p.highlighted && { borderTop: "3px solid var(--c-primary)" }),
-                ...(isCurrent && { outline: "2px solid var(--c-primary)" }),
-              }}
-            >
-              {p.highlighted && (
-                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--c-primary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "var(--s-2)" }}>
-                  Beliebteste Wahl
+    <Section title="Branchenvergleich">
+      {!data ? (
+        <div className="empty-state">
+          <div className="empty-icon">📈</div>
+          <div className="empty-title">Noch keine Benchmark-Daten</div>
+          <div className="empty-text">Setze deine Branche in Strategie um Vergleichsdaten zu erhalten.</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-4)" }}>
+          {metrics.map(m => {
+            const mine = data[m.key];
+            const avg = data[`${m.key}_avg`];
+            const top = data[`${m.key}_top25`];
+            const pct = avg > 0 ? Math.min((mine / avg) * 100, 200) : 0;
+            return (
+              <div key={m.key} className="card" style={{ padding: "var(--s-5)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--s-3)" }}>
+                  <span style={{ fontWeight: 600 }}>{m.label}</span>
+                  {mine != null && avg != null && (
+                    <span style={{ fontSize: "var(--text-xs)", color: mine >= avg ? "var(--c-success)" : "var(--c-warning)", fontWeight: 600 }}>
+                      {mine >= avg ? "Über Ø" : "Unter Ø"}
+                    </span>
+                  )}
                 </div>
-              )}
-              <div style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--c-text)", marginBottom: "var(--s-1)" }}>{p.label}</div>
-              <div style={{ marginBottom: "var(--s-4)" }}>
-                <span style={{ fontSize: "var(--text-title)", fontWeight: 700, color: "var(--c-text)", fontVariantNumeric: "tabular-nums" }}>{p.price}</span>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }}> {p.per}</span>
+                {mine != null && avg != null ? (
+                  <>
+                    <div style={{ display: "flex", gap: "var(--s-6)", marginBottom: "var(--s-3)" }}>
+                      <div><div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }}>Dein Wert</div><div style={{ fontWeight: 700 }}>{mine.toLocaleString("de-DE")}</div></div>
+                      <div><div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }}>Branche Ø</div><div style={{ fontWeight: 600, color: "var(--c-text-2)" }}>{avg.toLocaleString("de-DE")}</div></div>
+                      {top && <div><div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }}>Top 25%</div><div style={{ fontWeight: 600, color: "var(--c-text-2)" }}>{top.toLocaleString("de-DE")}</div></div>}
+                    </div>
+                    <div className="progress-track"><div className="progress-fill" style={{ width: `${Math.min(pct, 100)}%`, background: pct >= 100 ? "var(--c-success)" : "var(--c-primary)" }} /></div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text-4)" }}>Keine Daten verfügbar</div>
+                )}
               </div>
-              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 var(--s-5) 0", display: "flex", flexDirection: "column", gap: "var(--s-2)" }}>
-                {p.features.map((f) => (
-                  <li key={f} style={{ fontSize: "var(--text-sm)", color: "var(--c-text-2)", display: "flex", alignItems: "center", gap: "var(--s-2)" }}>
-                    <span style={{ color: "var(--c-success)", fontSize: "var(--text-xs)", fontWeight: 700 }}>✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              {isCurrent ? (
-                <div style={{ textAlign: "center", padding: "6px 0", fontSize: "var(--text-sm)", color: "var(--c-primary)", fontWeight: 600 }}>
-                  Aktueller Plan
-                </div>
-              ) : (
-                <button className={`btn ${p.highlighted ? "btn-primary" : "btn-secondary"} btn-sm`} style={{ width: "100%" }}>
-                  Wechseln
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+            );
+          })}
+        </div>
+      )}
+    </Section>
   );
 }
 
-// ── Main Settings ─────────────────────────────────────────────────────────────
+function TabTeam() {
+  const { authHeader } = useAuth();
+  const [members, setMembers] = useState([]);
 
-export default function Settings() {
-  const { user, authHeader, logout } = useAuth();
-  const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState("konto");
-
-  const TABS_DYNAMIC = [
-    { key: "konto",              label: t('account')              },
-    { key: "team",               label: t('team')                 },
-    { key: "benachrichtigungen", label: t('notifications')        },
-    { key: "sprache",            label: t('language')             },
-    { key: "abonnement",         label: t('subscription')         },
-  ];
+  useEffect(() => {
+    fetch("/api/team", { headers: authHeader() })
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setMembers(Array.isArray(d) ? d : d.members ?? []))
+      .catch(() => {});
+  }, []); // eslint-disable-line
 
   return (
-    <div
-      className="page-enter"
-      style={{
-        background: "var(--c-bg)",
-        minHeight: "calc(100dvh - var(--nav-height))",
-        padding: "var(--s-8)",
-        maxWidth: 720,
-        margin: "0 auto",
-      }}
-    >
-      <div style={{ marginBottom: "var(--s-6)" }}>
-        <div className="page-title">Einstellungen</div>
-        <div className="page-subtitle">Verwalte dein Konto und deine Präferenzen</div>
-      </div>
+    <Section title="Team-Mitglieder" action={<button className="btn btn-primary btn-sm">+ Einladen</button>}>
+      {members.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">👥</div>
+          <div className="empty-title">Noch keine Team-Mitglieder</div>
+          <div className="empty-text">Lade Kollegen ein um gemeinsam an Intlyst zu arbeiten.</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-2)" }}>
+          {members.map(m => (
+            <div key={m.id} className="card" style={{ padding: "var(--s-4)", display: "flex", alignItems: "center", gap: "var(--s-3)" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--c-primary-light)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: "var(--c-primary)" }}>
+                {(m.name || m.email || "?")[0].toUpperCase()}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: "var(--text-sm)" }}>{m.name || m.email}</div>
+                {m.name && <div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }}>{m.email}</div>}
+              </div>
+              <span className="badge badge-neutral">{m.role}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Section>
+  );
+}
 
-      <div className="tabs-underline" style={{ marginBottom: "var(--s-6)" }}>
-        {TABS_DYNAMIC.map((t) => (
-          <button
-            key={t.key}
-            className={`tab-underline${activeTab === t.key ? " active" : ""}`}
-            onClick={() => setActiveTab(t.key)}
-          >
-            {t.label}
-          </button>
+function TabBenachrichtigungen() {
+  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [digestWeekly, setDigestWeekly] = useState(true);
+  const [pushNotifs, setPushNotifs] = useState(false);
+
+  return (
+    <Section title="Benachrichtigungen">
+      <div className="card" style={{ padding: "var(--s-5) var(--s-6)", maxWidth: 520 }}>
+        <Toggle value={emailAlerts} onChange={setEmailAlerts} label="Alert-E-Mails (sofort bei kritischen Ereignissen)" />
+        <Toggle value={digestWeekly} onChange={setDigestWeekly} label="Wöchentlicher Digest (jeden Montag 07:00)" />
+        <Toggle value={pushNotifs} onChange={setPushNotifs} label="Browser-Push-Benachrichtigungen" />
+      </div>
+    </Section>
+  );
+}
+
+function TabAbo() {
+  const { authHeader } = useAuth();
+  const [billing, setBilling] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/billing/subscription", { headers: authHeader() })
+      .then(r => r.ok ? r.json() : null)
+      .then(setBilling)
+      .catch(() => {});
+  }, []); // eslint-disable-line
+
+  return (
+    <Section title="Aktueller Plan">
+      <div className="card" style={{ padding: "var(--s-6)", display: "flex", alignItems: "center", gap: "var(--s-6)", maxWidth: 520 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: "var(--text-xl)", fontWeight: 700 }}>{billing?.plan_name || "Free"}</div>
+          {billing?.status === "active" && <div style={{ fontSize: "var(--text-sm)", color: "var(--c-success)", fontWeight: 600, marginTop: 4 }}>● Aktiv</div>}
+          {billing?.next_billing_date && (
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)", marginTop: 4 }}>
+              Nächste Abrechnung: {new Date(billing.next_billing_date).toLocaleDateString("de-DE")}
+            </div>
+          )}
+        </div>
+        <button className="btn btn-primary btn-md">Upgrade</button>
+      </div>
+    </Section>
+  );
+}
+
+function TabBackup() {
+  const { authHeader } = useAuth();
+  const toast = useToast();
+  const [loading, setLoading] = useState(false);
+
+  async function createBackup() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/security/backup", { method: "POST", headers: authHeader() });
+      if (!res.ok) throw new Error();
+      toast.success("Backup erstellt!");
+    } catch { toast.error("Backup fehlgeschlagen."); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <Section title="Backup & Datensicherheit">
+      <div className="card" style={{ padding: "var(--s-6)", maxWidth: 520 }}>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--c-text-2)", marginBottom: "var(--s-5)", lineHeight: "var(--lh-loose)" }}>
+          Automatische Backups täglich 03:00 Uhr. Hier kannst du ein manuelles Backup erstellen.
+        </p>
+        <button className="btn btn-primary btn-md" onClick={createBackup} disabled={loading}>
+          {loading ? "Erstelle Backup…" : "Manuelles Backup erstellen"}
+        </button>
+      </div>
+    </Section>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+export default function Settings() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "strategie";
+  const integrationIds = SIDEBAR.find(g => g.group === "Integrationen")?.items.map(i => i.id) || [];
+
+  function setTab(id) { setSearchParams({ tab: id }); }
+
+  function renderContent() {
+    if (activeTab === "account" || activeTab === "profil") return <TabAccount />;
+    if (activeTab === "sicherheit")           return <TabSicherheit />;
+    if (activeTab === "strategie")            return <TabStrategie />;
+    if (activeTab === "benchmark")            return <TabBenchmark />;
+    if (activeTab === "team" || activeTab === "berechtigungen") return <TabTeam />;
+    if (activeTab === "benachrichtigungen")   return <TabBenachrichtigungen />;
+    if (activeTab === "abo" || activeTab === "rechnungen") return <TabAbo />;
+    if (activeTab === "backup" || activeTab === "auditlog") return <TabBackup />;
+    if (integrationIds.includes(activeTab))  return <TabIntegrations subtab={activeTab} />;
+    return (
+      <div className="empty-state">
+        <div className="empty-icon">🚧</div>
+        <div className="empty-title">Kommt bald</div>
+        <div className="empty-text">Dieser Bereich wird gerade entwickelt.</div>
+      </div>
+    );
+  }
+
+  const currentItem = SIDEBAR.flatMap(g => g.items).find(i => i.id === activeTab);
+
+  return (
+    <div style={{ minHeight: "calc(100dvh - var(--nav-height))", background: "var(--c-bg)", display: "grid", gridTemplateColumns: "240px 1fr" }}>
+
+      {/* Sidebar */}
+      <nav style={{
+        background: "var(--c-surface)", borderRight: "1px solid var(--c-border)",
+        padding: "var(--s-6) var(--s-3)", overflowY: "auto",
+        position: "sticky", top: "var(--nav-height)", height: "calc(100dvh - var(--nav-height))",
+      }}>
+        {SIDEBAR.map(group => (
+          <div key={group.group} style={{ marginBottom: "var(--s-5)" }}>
+            <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--c-text-4)", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 var(--s-3)", marginBottom: "var(--s-1)" }}>
+              {group.group}
+            </div>
+            {group.items.map(item => (
+              <button key={item.id} onClick={() => setTab(item.id)} style={{
+                display: "flex", alignItems: "center", gap: "var(--s-3)",
+                width: "100%", padding: "var(--s-2) var(--s-3)", borderRadius: "var(--r-sm)",
+                cursor: "pointer", textAlign: "left", border: "none",
+                background: activeTab === item.id ? "var(--c-primary-light)" : "transparent",
+                color: activeTab === item.id ? "var(--c-primary)" : "var(--c-text-2)",
+                fontWeight: activeTab === item.id ? 600 : 400,
+                fontSize: "var(--text-sm)", transition: "all 0.12s",
+              }}>
+                <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>
+              </button>
+            ))}
+          </div>
         ))}
+      </nav>
+
+      {/* Content */}
+      <div style={{ padding: "var(--s-8)", overflowY: "auto" }}>
+        {currentItem && (
+          <div style={{ marginBottom: "var(--s-6)" }}>
+            <h1 style={{ fontSize: "var(--text-title)", fontWeight: 700, color: "var(--c-text)", display: "flex", alignItems: "center", gap: "var(--s-3)" }}>
+              <span style={{ fontSize: 28 }}>{currentItem.icon}</span>
+              {currentItem.label}
+            </h1>
+          </div>
+        )}
+        {renderContent()}
       </div>
 
-      <div key={activeTab} className="page-enter">
-        {activeTab === "konto"              && <KontoTab user={user} authHeader={authHeader} logout={logout} />}
-        {activeTab === "team"               && <TeamTab authHeader={authHeader} />}
-        {activeTab === "benachrichtigungen" && <BenachrichtigungenTab authHeader={authHeader} />}
-        {activeTab === "sprache"            && <SpracheTab />}
-        {activeTab === "abonnement"         && <AbonnementTab authHeader={authHeader} />}
-      </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .settings-layout { grid-template-columns: 1fr !important; }
+          .settings-sidebar { display: none; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   AreaChart,
@@ -21,7 +21,8 @@ import {
 } from "../components/ui";
 import WeeklyReview from "../components/WeeklyReview";
 import GoalAdjustmentSuggestion from "../components/goals/GoalAdjustmentSuggestion";
-import AITransparencyDashboard from "../components/AITransparencyDashboard";
+import StrategyBanner from "../components/StrategyBanner";
+import GettingStartedWidget from "../components/onboarding/GettingStartedWidget";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -415,7 +416,7 @@ export default function Dashboard() {
   const [goalSheetOpen, setGoalSheetOpen] = useState(false);
   
   // ─ New Features state ─────────────────────────────────────────────────────
-  const [showWeeklyReview, setShowWeeklyReview] = useState(true);
+  const [showWeeklyReview] = useState(true);
   const [showGoalAdjustment, setShowGoalAdjustment] = useState(true);
   const [showMilestoneCelebration, setShowMilestoneCelebration] = useState(false);
   const [milestoneMilestone, setMilestoneMilestone] = useState(null);
@@ -558,7 +559,6 @@ export default function Dashboard() {
     null;
 
   const latestAlert = alerts[0] ?? null;
-  const totalTaskCount = tasks.length; // we only fetch 3, but API might return a total
 
   // ─ Recharts gradient ID ───────────────────────────────────────────────────
   const gradientId = "revenueGradient";
@@ -566,6 +566,7 @@ export default function Dashboard() {
   // ─ Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="page-enter" style={{ background: "var(--c-bg)", minHeight: "calc(100dvh - var(--nav-height))" }}>
+      <StrategyBanner />
 
       {/* ── 1. Hero ──────────────────────────────────────────────────────── */}
       <div style={{
@@ -573,10 +574,11 @@ export default function Dashboard() {
         display: "flex", alignItems: "center",
         justifyContent: "space-between", gap: "var(--s-6)", flexWrap: "wrap",
         borderBottom: "1px solid var(--c-border)",
+        background: "linear-gradient(135deg, var(--c-bg) 60%, var(--c-primary-light) 100%)",
       }}>
         <div>
           <div style={{ fontSize: "var(--text-2xl)", fontWeight: 700, letterSpacing: "-0.3px", color: "var(--c-text)", lineHeight: 1.2 }}>
-            {getGreeting()}, {user?.name || user?.email?.split("@")[0] || "Da"}!
+            {getGreeting()}, {user?.name || user?.email?.split("@")[0] || "Da"}! 👋
           </div>
           <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)", marginTop: "var(--s-1)" }}>
             {formatDateDE(new Date())}
@@ -593,6 +595,13 @@ export default function Dashboard() {
             <HealthRing score={healthScore} size={100} showLabel />
           )}
         </div>
+      </div>
+
+      {/* ── 1b. Getting Started ──────────────────────────────────────────── */}
+      <div style={{ padding: "var(--s-4) var(--s-8) 0" }}>
+        <GettingStartedWidget
+          onOpenChat={() => window.dispatchEvent(new CustomEvent("intlyst:open-chat"))}
+        />
       </div>
 
       {/* ── 2. KPI Strip ─────────────────────────────────────────────────── */}
@@ -684,26 +693,46 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── 3. Main Grid ─────────────────────────────────────────────────── */}
+      {/* ── 3. Alert Banner ──────────────────────────────────────────────── */}
+      {!alertsLoading && latestAlert && (
+        <div style={{ padding: "0 var(--s-8)", marginTop: "var(--s-3)" }}>
+          <Link to="/alerts" style={{ textDecoration: "none" }}>
+            <div
+              className="card"
+              style={{
+                display: "flex", alignItems: "center", gap: "var(--s-3)",
+                padding: "var(--s-3) var(--s-4)",
+                borderLeft: "3px solid var(--c-warning)",
+                background: "var(--c-warning-light)",
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ fontSize: 18 }}>⚠️</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--c-text)" }} className="truncate">
+                  {latestAlert.title || latestAlert.message || "Neuer Alert"}
+                </div>
+                {latestAlert.description && (
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }} className="truncate">
+                    {latestAlert.description}
+                  </div>
+                )}
+              </div>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)", flexShrink: 0 }}>Alle Alerts →</span>
+            </div>
+          </Link>
+        </div>
+      )}
+
+      {/* ── 4. Main Grid ─────────────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: "var(--s-4)", padding: "var(--s-3) var(--s-8)" }}>
 
         {/* LEFT — Chart */}
-        <div
-          className="card"
-          style={{ padding: "var(--s-5) var(--s-6)", minHeight: 360 }}
-        >
-          {/* Card header */}
+        <div className="card" style={{ padding: "var(--s-5) var(--s-6)", minHeight: 360 }}>
           <div className="section-header" style={{ marginBottom: "var(--s-4)" }}>
             <span className="section-title">Umsatz</span>
-            <div
-              className="tabs-pill"
-              style={{ display: "inline-flex", gap: 2 }}
-            >
-              {[
-                { days: 7, label: "7T" },
-                { days: 30, label: "30T" },
-                { days: 90, label: "90T" },
-              ].map(({ days, label }) => (
+            <div className="tabs-pill" style={{ display: "inline-flex", gap: 2 }}>
+              {[{ days: 7, label: "7T" }, { days: 30, label: "30T" }, { days: 90, label: "90T" }].map(({ days, label }) => (
                 <button
                   key={days}
                   className={`tab-pill${timeseriesDays === days ? " active" : ""}`}
@@ -715,92 +744,196 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Chart area */}
           {timeseriesLoading ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-3)" }}>
-              <SkeletonLine width="100%" height={280} />
-            </div>
+            <SkeletonLine width="100%" height={280} />
           ) : timeseriesError ? (
             <div className="error-state" style={{ padding: "var(--s-8)" }}>
               <div className="error-icon">⚠</div>
               <div style={{ fontSize: "var(--text-md)", fontWeight: 600, color: "var(--c-text)" }}>Chartdaten nicht verfügbar</div>
               <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text-3)" }}>{timeseriesError}</div>
+              <button className="btn btn-secondary btn-sm" onClick={() => fetchTimeseries(timeseriesDays)}>Erneut laden</button>
             </div>
           ) : timeseries.length === 0 ? (
             <div className="empty-state" style={{ padding: "var(--s-8)" }}>
               <div className="empty-icon">📈</div>
-              <div className="empty-title">Noch keine Daten</div>
-              <div className="empty-text">
-                Verbinde deine Datenquellen um den Chart zu befüllen.
-              </div>
+              <div className="empty-title">Noch keine Umsatzdaten</div>
+              <div className="empty-text">Verbinde eine Datenquelle um den Chart zu sehen.</div>
+              <Link to="/integrations" className="btn btn-primary btn-sm">Integration verbinden →</Link>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
-              <AreaChart
-                data={timeseries}
-                margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-              >
+              <AreaChart data={timeseries} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--c-primary)" stopOpacity={0.18} />
                     <stop offset="100%" stopColor="var(--c-primary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--c-border)"
-                  vertical={false}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--c-border)" vertical={false} />
                 <XAxis
-                  dataKey="date"
-                  tickFormatter={formatAxisDate}
-                  tick={{
-                    fontSize: 11,
-                    fill: "var(--c-text-3)",
-                    fontFamily: "var(--font)",
-                  }}
-                  tickLine={false}
-                  axisLine={false}
-                  interval="preserveStartEnd"
+                  dataKey="date" tickFormatter={formatAxisDate}
+                  tick={{ fontSize: 11, fill: "var(--c-text-3)", fontFamily: "var(--font)" }}
+                  tickLine={false} axisLine={false} interval="preserveStartEnd"
                 />
                 <YAxis
-                  tickFormatter={(v) =>
-                    new Intl.NumberFormat("de-DE", {
-                      notation: "compact",
-                      maximumFractionDigits: 1,
-                    }).format(v)
-                  }
-                  tick={{
-                    fontSize: 11,
-                    fill: "var(--c-text-3)",
-                    fontFamily: "var(--font)",
-                  }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={52}
+                  tickFormatter={(v) => new Intl.NumberFormat("de-DE", { notation: "compact", maximumFractionDigits: 1 }).format(v)}
+                  tick={{ fontSize: 11, fill: "var(--c-text-3)", fontFamily: "var(--font)" }}
+                  tickLine={false} axisLine={false} width={52}
                 />
                 <Tooltip content={<ChartTooltip />} />
                 <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="var(--c-primary)"
-                  strokeWidth={2}
-                  fill={`url(#${gradientId})`}
-                  dot={false}
-                  activeDot={{
-                    r: 4,
-                    fill: "var(--c-primary)",
-                    stroke: "var(--c-surface)",
-                    strokeWidth: 2,
-                  }}
+                  type="monotone" dataKey="value"
+                  stroke="var(--c-primary)" strokeWidth={2}
+                  fill={`url(#${gradientId})`} dot={false}
+                  activeDot={{ r: 4, fill: "var(--c-primary)", stroke: "var(--c-surface)", strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
           )}
+
+          {/* AI Top Recommendation below chart */}
+          {!analysisLoading && topRecommendation && (
+            <div style={{
+              marginTop: "var(--s-4)", padding: "var(--s-3) var(--s-4)",
+              background: "var(--c-primary-light)", borderRadius: "var(--r-sm)",
+              borderLeft: "3px solid var(--c-primary)",
+              display: "flex", gap: "var(--s-3)", alignItems: "flex-start",
+            }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>🤖</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--c-primary)", fontWeight: 600, marginBottom: 4 }}>KI-Empfehlung</div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--c-text)", lineHeight: "var(--lh-base)" }}>
+                  {topRecommendation}
+                </div>
+              </div>
+              <Link to="/analyse" style={{ fontSize: "var(--text-xs)", color: "var(--c-primary)", flexShrink: 0, fontWeight: 600, marginTop: 2 }}>
+                Details →
+              </Link>
+            </div>
+          )}
         </div>
 
+        {/* RIGHT — Goals + Tasks */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-4)" }}>
+
+          {/* Goals Card */}
+          <div className="card" style={{ padding: "var(--s-5)" }}>
+            <div className="section-header" style={{ marginBottom: "var(--s-4)" }}>
+              <span className="section-title">Ziele</span>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setGoalSheetOpen(true)}
+                style={{ fontSize: "var(--text-xs)", padding: "var(--s-1) var(--s-2)" }}
+              >
+                + Ziel
+              </button>
+            </div>
+            {goalsLoading ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-2)" }}>
+                {[0, 1].map(i => <SkeletonCard key={i} lines={2} />)}
+              </div>
+            ) : goalsError ? (
+              <div style={{ textAlign: "center", padding: "var(--s-4)" }}>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--c-danger)", marginBottom: "var(--s-2)" }}>Ziele konnten nicht geladen werden</div>
+                <button className="btn btn-secondary btn-sm" onClick={fetchGoals}>Erneut</button>
+              </div>
+            ) : goals.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">🎯</div>
+                <div className="empty-title">Noch keine Ziele</div>
+                <div className="empty-text">Setze dein erstes Ziel.</div>
+                <button className="btn btn-primary btn-sm" onClick={() => setGoalSheetOpen(true)}>
+                  Ziel setzen
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-2)" }}>
+                {goals.slice(0, 4).map(goal => <GoalRow key={goal.id} goal={goal} />)}
+                {goals.length > 4 && (
+                  <div style={{ textAlign: "center", paddingTop: "var(--s-2)" }}>
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--c-text-3)" }}>
+                      +{goals.length - 4} weitere Ziele
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Tasks Card */}
+          <div className="card" style={{ padding: "var(--s-5)" }}>
+            <div className="section-header" style={{ marginBottom: "var(--s-4)" }}>
+              <span className="section-title">Offene Aufgaben</span>
+              <Link to="/tasks" style={{ fontSize: "var(--text-xs)", color: "var(--c-primary)", fontWeight: 600 }}>
+                Alle →
+              </Link>
+            </div>
+            {tasksLoading ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-2)" }}>
+                {[0, 1, 2].map(i => <SkeletonCard key={i} lines={1} />)}
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">✅</div>
+                <div className="empty-title">Alles erledigt!</div>
+                <div className="empty-text">Keine offenen Aufgaben.</div>
+                <Link to="/tasks" className="btn btn-primary btn-sm">Aufgabe erstellen</Link>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--s-2)" }}>
+                {tasks.map(task => (
+                  <div
+                    key={task.id}
+                    className="card"
+                    style={{ padding: "var(--s-3) var(--s-4)", display: "flex", alignItems: "center", gap: "var(--s-3)" }}
+                  >
+                    <div
+                      style={{
+                        width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                        background: taskPriorityColor(task.priority),
+                      }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--c-text)" }} className="truncate">
+                        {task.title}
+                      </div>
+                    </div>
+                    <span className={taskStatusBadge(task.status)}>
+                      {taskStatusLabel(task.status)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
       </div>
 
+      {/* ── 5. Weekly Review + Goal Adjustment ───────────────────────────── */}
+      {(showWeeklyReview || showGoalAdjustment) && (
+        <div style={{ padding: "0 var(--s-8) var(--s-6)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--s-4)" }}>
+          {showWeeklyReview && (
+            <WeeklyReview
+              completedRecommendations={analysis?.completed_recommendations ?? 2}
+              totalRecommendations={analysis?.total_recommendations ?? 3}
+              metricName="Umsatz"
+              metricChange={kpis?.revenue_change ?? 840}
+              metricUnit="€"
+              nextRecommendations={analysis?.recommendations ?? []}
+            />
+          )}
+          {showGoalAdjustment && goals.length > 0 && (
+            <GoalAdjustmentSuggestion
+              goalLabel={goals[0]?.metric_label ?? "Umsatz"}
+              currentValue={goals[0]?.current_value ?? 0}
+              targetValue={goals[0]?.target_value ?? 1}
+              onAccept={() => setShowGoalAdjustment(false)}
+              onDismiss={() => setShowGoalAdjustment(false)}
+            />
+          )}
+        </div>
+      )}
 
       {/* ── Sheets ───────────────────────────────────────────────────────── */}
       <KpiDetailSheet
@@ -810,6 +943,12 @@ export default function Dashboard() {
         kpis={kpis}
       />
 
+      <AddGoalSheet
+        isOpen={goalSheetOpen}
+        onClose={() => setGoalSheetOpen(false)}
+        onSaved={() => { setGoalSheetOpen(false); fetchGoals(); }}
+        authHeader={authHeader}
+      />
 
       {/* ── Milestone Celebration ────────────────────────────────────────── */}
       <MilestoneCelebration
